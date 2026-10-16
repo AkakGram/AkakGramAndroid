@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921818597815",
+    "project_id": "akakgram-6cbd2",
+    "storage_bucket": "akakgram-6cbd2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921818597815:android:866fa4286d4503ddd54032",
+        "android_client_info": {
+          "package_name": "com.pelelteam.chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDerEAGgbIJBvKCGCoceQaAKwdAk4vi7YA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

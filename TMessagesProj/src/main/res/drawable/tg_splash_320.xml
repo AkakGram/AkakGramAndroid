@@ -1,0 +1,92 @@
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="splash_vector"
+            android:width="320dp"
+            android:height="320dp"
+            android:viewportWidth="500"
+            android:viewportHeight="500">
+
+            <!-- Уменьшенный начальный масштаб (0.15), чтобы иконка была аккуратной -->
+            <group
+                android:name="root_scale_group"
+                android:pivotX="250"
+                android:pivotY="250"
+                android:scaleX="0.15"
+                android:scaleY="0.15">
+
+                <!-- Круглая маска -->
+                <clip-path
+                    android:name="circle_mask"
+                    android:pathData="M 250 20 C 377.17 20 480 122.83 480 250 C 480 377.17 377.17 480 250 480 C 122.83 480 20 377.17 20 250 C 20 122.83 122.83 20 250 20 Z" />
+
+                <!-- 1. Фоновый круг с градиентом логотипа -->
+                <path
+                    android:name="bg_circle"
+                    android:pathData="M 250 20 C 377.17 20 480 122.83 480 250 C 480 377.17 377.17 480 250 480 C 122.83 480 20 377.17 20 250 C 20 122.83 122.83 20 250 20 Z"
+                    android:fillColor="#4A52A3"
+                    android:fillAlpha="1"/>
+
+                <!-- 2. Звезды -->
+                <group android:name="stars_group">
+                    <path android:pathData="M 260,85 Q 260,115 230,115 Q 260,115 260,145 Q 260,115 290,115 Q 260,115 260,85 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.9"/>
+                    <path android:pathData="M 425,225 Q 425,247 403,247 Q 425,247 425,269 Q 425,247 447,247 Q 425,247 425,225 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.85"/>
+                    <path android:pathData="M 270,390 Q 270,415 245,415 Q 270,415 270,440 Q 270,415 295,415 Q 270,415 270,390 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.85"/>
+                    <path android:pathData="M 140,285 Q 140,300 125,300 Q 140,300 140,315 Q 140,300 155,300 Q 140,300 140,285 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.7"/>
+                </group>
+
+                <!-- 3. Облака -->
+                <group android:name="clouds_group">
+                    <path android:pathData="M 90,180 a 25,25 0 0,1 30,-22 a 35,35 0 0,1 60,-10 a 25,25 0 0,1 35,22 a 20,20 0 0,1 -10,35 l -105,0 a 25,25 0 0,1 -10,-25 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.9"/>
+                    <path android:pathData="M 310,360 a 22,22 0 0,1 25,-18 a 30,30 0 0,1 50,-8 a 22,22 0 0,1 30,18 a 18,18 0 0,1 -8,30 l -90,0 a 22,22 0 0,1 -7,-22 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.85"/>
+                </group>
+
+                <!-- 4. Самолетик (наклонен вправо на 45 градусов) -->
+                <group
+                    android:name="plane_group"
+                    android:pivotX="270"
+                    android:pivotY="245"
+                    android:rotation="45">
+
+                    <path android:pathData="M 145,245 L 395,135 L 210,355 Z" android:fillColor="#65A8DE" />
+                    <path android:pathData="M 210,355 L 395,135 L 255,295 Z" android:fillColor="#3D6FA5" android:fillAlpha="0.5" />
+                    <path android:pathData="M 255,295 L 395,135 L 240,195 Z" android:fillColor="#C6F3FF" />
+                    <path android:pathData="M 240,195 L 395,135 L 300,280 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.6" />
+                </group>
+
+            </group>
+        </vector>
+    </aapt:attr>
+
+    <!-- Анимация появления: растет от 0.15 до аккуратного размера 0.7 -->
+    <target android:name="root_scale_group">
+        <aapt:attr name="android:animation">
+            <set>
+                <!--
+                  Мы используем fast_out_slow_in_interpolator для плавного,
+                  но не "пружинящего" появления. Анимация ускоряется в начале
+                  и замедляется в конце, точно достигая 0.7.
+                -->
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:startOffset="100"
+                    android:duration="400"
+                    android:valueFrom="0.15"
+                    android:valueTo="0.7"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"/>
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:startOffset="100"
+                    android:duration="400"
+                    android:valueFrom="0.15"
+                    android:valueTo="0.7"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"/>
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>
