@@ -204,6 +204,15 @@ public class Browser {
         if (link.startsWith("@")) {
             return link.substring(1);
         }
+        if (link.startsWith("akakgram.cc.cd/")) {
+            return link.substring(16);
+        }
+        if (link.startsWith("http://akakgram.cc.cd/")) {
+            return link.substring(23);
+        }
+        if (link.startsWith("https://akakgram.cc.cd/")) {
+            return link.substring(24);
+        }
         if (link.startsWith("t.me/")) {
             return link.substring(5);
         }
@@ -690,7 +699,7 @@ public class Browser {
 
         Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
         if (prefixMatcher.find()) {
-            uri = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
+            uri = Uri.parse("https://akakgram.cc.cd/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
 
             host = uri.getHost();
             host = host != null ? host.toLowerCase() : "";
@@ -707,7 +716,7 @@ public class Browser {
 
             }
             return true;
-        } else if ("tg".equals(uri.getScheme())) {
+        } else if ("tg".equals(uri.getScheme()) || "ag".equals(uri.getScheme())) {
             return true;
         } else if ("telegram.dog".equals(host)) {
             String path = uri.getPath();
@@ -724,7 +733,7 @@ public class Browser {
                 }
                 return true;
             }
-        } else if ("telegram.me".equals(host) || "t.me".equals(host)) {
+        } else if ("telegram.me".equals(host) || "t.me".equals(host) || "akakgram.cc.cd".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 if (all) {

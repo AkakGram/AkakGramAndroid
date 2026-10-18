@@ -1172,7 +1172,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     }
                 } else {
                     final Uri uri = Uri.parse(selectedTier.subscriptionOption.bot_url);
-                    if (uri.getHost().equals("t.me")) {
+                    if ("t.me".equals(uri.getHost()) || "akakgram.cc.cd".equals(uri.getHost())) {
                         if (!uri.getPath().startsWith("/$") && !uri.getPath().startsWith("/invoice/")) {
                             launchActivity.setNavigateToPremiumBot(true);
                         }

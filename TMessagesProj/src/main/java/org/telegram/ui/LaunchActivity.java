@@ -256,7 +256,7 @@ import java.util.zip.ZipInputStream;
 public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, IPipActivity {
     public final static String EXTRA_FORCE_NOT_INTERNAL_APPS = "force_not_internal_apps";
     public final static String EXTRA_FORCE_REQUEST = "force_request";
-    public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.t\\.me");
+    public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.(?:t\\.me|akakgram\\.cc\\.cd)");
 
     public static boolean isActive;
     private static int activeInstanceCount;
@@ -2286,8 +2286,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     }
                                     break;
                                 }
-                                case "tg": {
+                                case "tg":
+                                case "ag": {
                                     String url = data.toString();
+                                    if (url.startsWith("ag:")) {
+                                        url = "tg:" + url.substring(3);
+                                    } else if (url.startsWith("ag://")) {
+                                        url = "tg://" + url.substring(5);
+                                    }
                                     if (url.startsWith("tg:premium_offer") || url.startsWith("tg://premium_offer")) {
                                         String finalUrl = url;
                                         AndroidUtilities.runOnUIThread(() -> {
@@ -2810,7 +2816,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             }
                         }
                         if (intent.hasExtra(EXTRA_ACTION_TOKEN)) {
-                            final boolean success = UserConfig.getInstance(currentAccount).isClientActivated() && "tg".equals(scheme) && unsupportedUrl == null;
+                            final boolean success = UserConfig.getInstance(currentAccount).isClientActivated() && ("tg".equals(scheme) || "ag".equals(scheme)) && unsupportedUrl == null;
                             final Action assistAction = new AssistActionBuilder()
                                     .setActionToken(intent.getStringExtra(EXTRA_ACTION_TOKEN))
                                     .setActionStatus(success ? Action.Builder.STATUS_TYPE_COMPLETED : Action.Builder.STATUS_TYPE_FAILED)
@@ -5969,6 +5975,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private boolean firstAppUpdateCheck = true;
     public void checkAppUpdate(boolean force, Browser.Progress progress) {
+        if (force) {
+            org.telegram.messenger.custom.CustomUpdateController.getInstance().checkAppUpdate(this, true);
+        }
         if (!ApplicationLoader.isStandaloneBuild() && !ApplicationLoader.isBetaBuild()) {
             return;
         }
@@ -7038,6 +7047,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             showUpdateActivity(UserConfig.selectedAccount, SharedConfig.pendingAppUpdate, true);
         }
         checkAppUpdate(false, null);
+        org.telegram.messenger.custom.CustomUpdateController.getInstance().checkAppUpdate(this, false);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ApplicationLoader.canDrawOverlays = Settings.canDrawOverlays(this);

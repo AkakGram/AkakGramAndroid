@@ -41858,6 +41858,11 @@ public class ChatActivity extends BaseFragment implements
             progressDialogLinkSpan = span;
             cell.invalidate();
         } : null;
+        if (urlFinal.startsWith("ag:privatepost") || urlFinal.startsWith("ag://privatepost")) {
+            urlFinal = urlFinal.replace("ag:privatepost", "tg:privatepost").replace("ag://privatepost", "tg://privatepost");
+        } else if (urlFinal.startsWith("ag:resolve") || urlFinal.startsWith("ag://resolve")) {
+            urlFinal = urlFinal.replace("ag:resolve", "tg:resolve").replace("ag://resolve", "tg://resolve");
+        }
         if (urlFinal.startsWith("tg:privatepost") || urlFinal.startsWith("tg://privatepost")) {
             String urlTmp = urlFinal.replace("tg:privatepost", "tg://telegram.org").replace("tg://privatepost", "tg://telegram.org");
             Uri data = Uri.parse(urlTmp);
@@ -41881,8 +41886,8 @@ public class ChatActivity extends BaseFragment implements
         } else if (ChatObject.getPublicUsername(currentChat) != null) {
             try {
                 if (publicMsgUrlPattern == null) {
-                    publicMsgUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)/([0-9]+)/?([0-9]+)?");
-                    voiceChatUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)\\?(voicechat+)");
+                    publicMsgUrlPattern = Pattern.compile("(https://)?(?:t\\.me|akakgram\\.cc\\.cd)/([0-9a-zA-Z_]+)/([0-9]+)/?([0-9]+)?");
+                    voiceChatUrlPattern = Pattern.compile("(https://)?(?:t\\.me|akakgram\\.cc\\.cd)/([0-9a-zA-Z_]+)\\?(voicechat+)");
                 }
                 Matcher matcher = publicMsgUrlPattern.matcher(urlFinal);
                 if (matcher.find(2) && matcher.find(3) && ChatObject.hasPublicLink(currentChat, matcher.group(2))) {
@@ -41964,7 +41969,7 @@ public class ChatActivity extends BaseFragment implements
         } else {
             try {
                 if (privateMsgUrlPattern == null) {
-                    privateMsgUrlPattern = Pattern.compile("(https://)?t.me/c/([0-9]+)/([0-9]+)/?([0-9]+)?");
+                    privateMsgUrlPattern = Pattern.compile("(https://)?(?:t\\.me|akakgram\\.cc\\.cd)/c/([0-9]+)/([0-9]+)/?([0-9]+)?");
                 }
                 Matcher matcher = privateMsgUrlPattern.matcher(urlFinal);
                 if (matcher.find(2) && matcher.find(3) && matcher.group(4) == null) {

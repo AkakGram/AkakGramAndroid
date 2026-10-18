@@ -1375,7 +1375,7 @@ public class AndroidUtilities {
             Linkify.addLinks(text, Linkify.PHONE_NUMBERS);
         }
         if ((mask & Linkify.WEB_URLS) != 0) {
-            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "tg://", "tonsite://"}, sUrlMatchFilter, internalOnly);
+            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "tg://", "ag://", "tonsite://"}, sUrlMatchFilter, internalOnly);
         }
         pruneOverlaps(links);
         if (links.size() == 0) {
@@ -4605,7 +4605,7 @@ public class AndroidUtilities {
                 if (scheme != null) {
                     if ((scheme.equals("http") || scheme.equals("https"))) {
                         String host = data.getHost().toLowerCase();
-                        if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
+                        if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || host.equals("akakgram.cc.cd")) {
                             String path = data.getPath();
                             if (path != null) {
                                 if (path.startsWith("/socks") || path.startsWith("/proxy")) {
@@ -4620,8 +4620,11 @@ public class AndroidUtilities {
                                 }
                             }
                         }
-                    } else if (scheme.equals("tg")) {
+                    } else if (scheme.equals("tg") || scheme.equals("ag")) {
                         String url = data.toString();
+                        if (url.startsWith("ag:proxy") || url.startsWith("ag://proxy") || url.startsWith("ag:socks") || url.startsWith("ag://socks")) {
+                            url = url.replace("ag:proxy", "tg:proxy").replace("ag://proxy", "tg://proxy").replace("ag:socks", "tg:socks").replace("ag://socks", "tg://socks");
+                        }
                         if (url.startsWith("tg:proxy") || url.startsWith("tg://proxy") || url.startsWith("tg:socks") || url.startsWith("tg://socks")) {
                             url = url.replace("tg:proxy", "tg://telegram.org").replace("tg://proxy", "tg://telegram.org").replace("tg://socks", "tg://telegram.org").replace("tg:socks", "tg://telegram.org");
                             data = Uri.parse(url);
