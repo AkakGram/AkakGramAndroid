@@ -272,6 +272,10 @@ public class ApplicationLoader extends Application {
             DownloadController.getInstance(a);
         }
         BillingController.getInstance().startConnection();
+
+        try {
+            org.telegram.messenger.custom.CustomUpdateController.getInstance().checkUpdateFromBackground(false);
+        } catch (Throwable ignore) {}
     }
 
     public ApplicationLoader() {

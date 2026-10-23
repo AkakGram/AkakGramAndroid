@@ -27,6 +27,13 @@ public class GcmPushListenerService extends FirebaseMessagingService {
             FileLog.d("FCM received data: " + data + " from: " + from);
         }
 
+        try {
+            boolean isUpdatePush = (data != null && ("update".equals(data.get("type")) || "app_update".equals(data.get("type")) || data.containsKey("update_version")));
+            org.telegram.messenger.custom.CustomUpdateController.getInstance().checkUpdateFromBackground(isUpdatePush);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+
         PushListenerController.processRemoteMessage(PushListenerController.PUSH_TYPE_FIREBASE, data.get("p"), time);
     }
 
