@@ -33,6 +33,19 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.os.Build;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.FileProvider;
+import org.telegram.messenger.NotificationsController;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -61,9 +74,43 @@ public class CustomUpdateController {
 
     private static final String PREF_NAME = "custom_update_pref";
     private static final String KEY_REMIND_LATER_TIMESTAMP = "remind_later_timestamp";
+    private static final String KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled";
+    private static final String KEY_AUTO_UPDATE_WIFI_ONLY = "auto_update_wifi_only";
+    private static final String KEY_LAST_BACKGROUND_CHECK = "last_background_check";
+
+    public static final String ACTION_INSTALL_UPDATE = "org.telegram.messenger.custom.INSTALL_UPDATE";
+    public static final String EXTRA_UPDATE_FILE = "extra_update_file";
 
     private boolean isChecking = false;
     private UpdateBottomSheet activeSheet = null;
+
+    public static boolean isAutoUpdateEnabled() {
+        return ApplicationLoader.applicationContext
+                .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .getBoolean(KEY_AUTO_UPDATE_ENABLED, true);
+    }
+
+    public static void setAutoUpdateEnabled(boolean enabled) {
+        ApplicationLoader.applicationContext
+                .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_AUTO_UPDATE_ENABLED, enabled)
+                .apply();
+    }
+
+    public static boolean isAutoUpdateWifiOnly() {
+        return ApplicationLoader.applicationContext
+                .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .getBoolean(KEY_AUTO_UPDATE_WIFI_ONLY, true);
+    }
+
+    public static void setAutoUpdateWifiOnly(boolean wifiOnly) {
+        ApplicationLoader.applicationContext
+                .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_AUTO_UPDATE_WIFI_ONLY, wifiOnly)
+                .apply();
+    }
 
     public static class UpdateInfo {
         public int versionCode;
@@ -120,6 +167,50 @@ public class CustomUpdateController {
                     FileLog.d("CustomUpdateController: fetchUpdateInfo returned null");
                 }
             });
+        });
+    }
+
+    public void checkUpdateFromBackground(boolean triggeredByFcm) {
+        if (!isAutoUpdateEnabled()) {
+            FileLog.d("CustomUpdateController: background check skipped (auto-update disabled)");
+            return;
+        }
+
+        SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        long lastCheck = prefs.getLong(KEY_LAST_BACKGROUND_CHECK, 0L);
+        long now = System.currentTimeMillis();
+
+        if (!triggeredByFcm && (now - lastCheck < 3 * 3600 * 1000L)) {
+            FileLog.d("CustomUpdateController: background check throttled (last check: " + (now - lastCheck) + " ms ago)");
+            return;
+        }
+        prefs.edit().putLong(KEY_LAST_BACKGROUND_CHECK, now).apply();
+
+        if (isAutoUpdateWifiOnly() && ApplicationLoader.isConnectionSlow()) {
+            FileLog.d("CustomUpdateController: auto update skipped because wifi-only is enabled and network is slow/mobile");
+        }
+
+        Utilities.globalQueue.postRunnable(() -> {
+            FileLog.d("CustomUpdateController: background checking update (fcm=" + triggeredByFcm + ")");
+            UpdateInfo info = fetchUpdateInfo(UPDATE_URL_ENDPOINT_1);
+            if (info == null) {
+                info = fetchUpdateInfo(UPDATE_URL_ENDPOINT_2);
+            }
+            if (info != null) {
+                int currentVersionCode = SharedConfig.buildVersion();
+                int normalizedCurrentCode = currentVersionCode;
+                int remoteCode = info.versionCode;
+                if (currentVersionCode > 10000 && remoteCode < 10000) {
+                    normalizedCurrentCode = currentVersionCode / 10;
+                } else if (remoteCode > 10000 && currentVersionCode < 10000) {
+                    remoteCode = remoteCode / 10;
+                }
+
+                if (remoteCode > normalizedCurrentCode) {
+                    FileLog.d("CustomUpdateController: new version available in background: " + info.versionCode + ", starting auto-download");
+                    startBackgroundDownload(info);
+                }
+            }
         });
     }
 
@@ -413,6 +504,182 @@ public class CustomUpdateController {
         } catch (Exception e) {
             FileLog.e(e);
             Browser.openUrl(context, downloadUrl);
+        }
+    }
+
+    private static boolean isDownloadingBackground = false;
+
+    private void startBackgroundDownload(UpdateInfo info) {
+        if (info == null || TextUtils.isEmpty(info.downloadUrl)) {
+            return;
+        }
+        if (isDownloadingBackground) {
+            FileLog.d("CustomUpdateController: background download already in progress");
+            return;
+        }
+        isDownloadingBackground = true;
+
+        Utilities.globalQueue.postRunnable(() -> {
+            File tempFile = null;
+            HttpURLConnection conn = null;
+            InputStream in = null;
+            OutputStream out = null;
+            try {
+                File dir = new File(ApplicationLoader.applicationContext.getFilesDir(), "updates");
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+
+                String fileName = "AkakGram_v" + info.versionCode + ".apk";
+                File destFile = new File(dir, fileName);
+                tempFile = new File(dir, fileName + ".tmp");
+
+                if (destFile.exists() && destFile.length() > 0) {
+                    FileLog.d("CustomUpdateController: update APK already downloaded: " + destFile.getAbsolutePath());
+                    isDownloadingBackground = false;
+                    onBackgroundDownloadFinished(destFile, info);
+                    return;
+                }
+
+                if (tempFile.exists()) {
+                    tempFile.delete();
+                }
+
+                URL url = new URL(info.downloadUrl);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(30000);
+                conn.setRequestProperty("User-Agent", "AkakGram-Android/" + BuildVars.BUILD_VERSION_STRING);
+                conn.connect();
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    in = conn.getInputStream();
+                    out = new FileOutputStream(tempFile);
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    while ((read = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, read);
+                    }
+                    out.flush();
+                    out.close();
+                    out = null;
+                    in.close();
+                    in = null;
+
+                    if (tempFile.renameTo(destFile)) {
+                        FileLog.d("CustomUpdateController: background download succeeded: " + destFile.getAbsolutePath());
+                        isDownloadingBackground = false;
+                        onBackgroundDownloadFinished(destFile, info);
+                    } else {
+                        FileLog.e("CustomUpdateController: failed to rename temp file to destFile");
+                        isDownloadingBackground = false;
+                    }
+                } else {
+                    FileLog.e("CustomUpdateController: download failed with HTTP code " + responseCode);
+                    isDownloadingBackground = false;
+                }
+            } catch (Exception e) {
+                FileLog.e("CustomUpdateController: background download exception", e);
+                isDownloadingBackground = false;
+                if (tempFile != null && tempFile.exists()) {
+                    tempFile.delete();
+                }
+            } finally {
+                if (in != null) {
+                    try { in.close(); } catch (Exception ignore) {}
+                }
+                if (out != null) {
+                    try { out.close(); } catch (Exception ignore) {}
+                }
+                if (conn != null) {
+                    try { conn.disconnect(); } catch (Exception ignore) {}
+                }
+            }
+        });
+    }
+
+    private void onBackgroundDownloadFinished(File apkFile, UpdateInfo info) {
+        AndroidUtilities.runOnUIThread(() -> {
+            boolean hasPermission = true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                hasPermission = ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls();
+            }
+
+            FileLog.d("CustomUpdateController: onBackgroundDownloadFinished, canRequestPackageInstalls=" + hasPermission);
+
+            if (hasPermission) {
+                promptInstallApk(ApplicationLoader.applicationContext, apkFile);
+            }
+            showUpdateNotification(ApplicationLoader.applicationContext, apkFile, info);
+        });
+    }
+
+    public static void promptInstallApk(Context context, File apkFile) {
+        if (context == null || apkFile == null || !apkFile.exists()) {
+            return;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Uri uri;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                uri = FileProvider.getUriForFile(context, ApplicationLoader.getApplicationId() + ".provider", apkFile);
+            } else {
+                uri = Uri.fromFile(apkFile);
+            }
+            intent.setDataAndType(uri, "application/vnd.android.package-archive");
+            context.startActivity(intent);
+        } catch (Exception e) {
+            FileLog.e("CustomUpdateController: promptInstallApk failed", e);
+        }
+    }
+
+    public static void showUpdateNotification(Context context, File apkFile, UpdateInfo info) {
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) {
+                return;
+            }
+
+            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+            installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Uri uri;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                uri = FileProvider.getUriForFile(context, ApplicationLoader.getApplicationId() + ".provider", apkFile);
+            } else {
+                uri = Uri.fromFile(apkFile);
+            }
+            installIntent.setDataAndType(uri, "application/vnd.android.package-archive");
+
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= 23) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+            PendingIntent pendingIntent = PendingIntent.getActivity(context, 1001, installIntent, flags);
+
+            String channelId = NotificationsController.OTHER_NOTIFICATIONS_CHANNEL != null
+                    ? NotificationsController.OTHER_NOTIFICATIONS_CHANNEL
+                    : "Other";
+
+            String title = "Обновление AkakGram загружено";
+            String versionText = (info != null && !TextUtils.isEmpty(info.versionName))
+                    ? ("Версия " + info.versionName + " готова к установке. Нажмите для обновления.")
+                    : "Новая версия готова к установке. Нажмите для обновления.";
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+                    .setContentTitle(title)
+                    .setContentText(versionText)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(versionText))
+                    .setSmallIcon(R.drawable.notification)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+            nm.notify(998877, builder.build());
+        } catch (Exception e) {
+            FileLog.e("CustomUpdateController: showUpdateNotification failed", e);
         }
     }
 }
