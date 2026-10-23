@@ -853,6 +853,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             case 13:
                 presentSettingFragment(new TONIntroActivity());
                 break;
+            case 100:
+                presentSettingFragment(new DataSettingsActivity());
+                break;
             case 15:
                 presentSettingFragment(new PremiumPreviewFragment(PremiumPreviewFragment.FEATURES_BUSINESS, "settings"));
                 break;
