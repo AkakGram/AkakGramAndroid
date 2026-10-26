@@ -621,13 +621,19 @@ public class DataSettingsActivity extends BaseFragment {
                 if (getParentActivity() == null) {
                     return;
                 }
-                final int[] threadValues = new int[]{4, 8, 16, 24, 32};
+                final int[] threadValues = new int[]{4, 8, 16, 24, 32, 45, 50, 55, 60, 65, 70};
                 final String[] threadNames = new String[]{
                         "4 потока (по умолчанию)",
                         "8 потоков (быстро)",
                         "16 потоков (очень быстро)",
                         "24 потока (турбо)",
-                        "32 потока (максимум)"
+                        "32 потока (экстрим)",
+                        "45 потоков (ультра)",
+                        "50 потоков (супер)",
+                        "55 потоков (гипер)",
+                        "60 потоков (мега)",
+                        "65 потоков (нитро)",
+                        "70 потоков (максимум)"
                 };
                 int selected = 2; // 16 по умолчанию
                 for (int a = 0; a < threadValues.length; a++) {
@@ -807,8 +813,8 @@ public class DataSettingsActivity extends BaseFragment {
                             val = "4 потока (по умолчанию)";
                         } else if (SharedConfig.uploadThreads == 16) {
                             val = "16 потоков (рекомендуется)";
-                        } else if (SharedConfig.uploadThreads == 32) {
-                            val = "32 потока (максимум)";
+                        } else if (SharedConfig.uploadThreads == 70) {
+                            val = "70 потоков (максимум)";
                         }
                         textCell.setTextAndValue("Потоки загрузки на сервер", val, false, false);
                     } else if (position == checkUpdateRow) {
