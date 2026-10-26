@@ -349,9 +349,15 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         });
 
         ActionBarMenu menu = actionBar.createMenu();
+        if (SharedConfig.liquidGlassEnabled) {
+            menu.setTranslationX(-dp(5));
+        }
 
         searchItem = menu.addItem(search_button, R.drawable.outline_header_search);
         searchItem.setContentDescription(getString(R.string.SearchContacts));
+        if (SharedConfig.liquidGlassEnabled) {
+            searchItem.setIsGlassButtonCircle(true);
+        }
 
         searchField.editText.addTextChangedListener(new SearchTextWatcher(searchField.editText, new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
@@ -405,6 +411,9 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         if (!createSecretChat && !returnAsResult) {
             sortItem = menu.addItem(sort_button, sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
             sortItem.setContentDescription(getString(R.string.AccDescrContactSorting));
+            if (SharedConfig.liquidGlassEnabled) {
+                sortItem.setIsGlassButtonCircle(true);
+            }
         }
 
         listView = new RecyclerListView(context);
@@ -534,7 +543,13 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             blur3_InvalidateBlur();
         }));
         listView.setSections(true);
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        if (SharedConfig.liquidGlassEnabled) {
+            org.telegram.ui.Components.glass.GlowBackgroundView glowBg = new org.telegram.ui.Components.glass.GlowBackgroundView(context);
+            contentView.addView(glowBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            contentView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        } else {
+            contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        }
 
         FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context);
         flickerLoadingView.setViewType(FlickerLoadingView.PROFILE_SEARCH_CELL);
@@ -918,7 +933,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 //                    animatorSearchFieldVisible.setValue(searchVisible, true);
 //                }
 
-                final boolean shadowVisible = !(firstVisibleItem == 0 && firstViewTop >= listView.getPaddingTop());
+                final boolean shadowVisible = !SharedConfig.liquidGlassEnabled && !(firstVisibleItem == 0 && firstViewTop >= listView.getPaddingTop());
                 headerShadowView.setShadowVisible(shadowVisible, true);
 
                 lastScrollToDown = dy < 0;
@@ -1451,7 +1466,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 actionBar.updateColors();
             }
             if (contentView != null) {
-                contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+                contentView.setBackgroundColor(SharedConfig.liquidGlassEnabled ? android.graphics.Color.TRANSPARENT : getThemedColor(Theme.key_windowBackgroundGray));
             }
         };
 

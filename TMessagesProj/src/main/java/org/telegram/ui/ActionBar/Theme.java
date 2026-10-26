@@ -199,6 +199,7 @@ public class Theme {
         private int currentBackgroundHeight;
         private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Paint selectedPaint;
+        private Paint glassStrokePaint;
         private int currentColor;
         private int currentGradientColor1;
         private int currentGradientColor2;
@@ -488,7 +489,7 @@ public class Theme {
             } else if (overrideRounding > 0) {
                 newRad = 0;
             } else {
-                newRad = dp(SharedConfig.bubbleRadius);
+                newRad = SharedConfig.liquidGlassEnabled ? dp(20) : dp(SharedConfig.bubbleRadius);
             }
             int idx;
             if (isTopNear && isBottomNear) {
@@ -511,10 +512,23 @@ public class Theme {
                 idx2 = 0;
             }
             int color;
-            if (isSelected) {
-                color = getColor(isOut ? key_chat_outBubbleSelected : key_chat_inBubbleSelected);
+            if (SharedConfig.liquidGlassEnabled) {
+                if (isSelected) {
+                    color = isOut ? 0x665EE0A0 : 0x2EFFFFFF;
+                } else {
+                    int accent = SharedConfig.liquidGlassAccentColor;
+                    int r = Color.red(accent);
+                    int g = Color.green(accent);
+                    int b = Color.blue(accent);
+                    // Outgoing: accent 35% alpha, Incoming: white 9% alpha
+                    color = isOut ? Color.argb((int)(255 * 0.35f), r, g, b) : 0x17FFFFFF;
+                }
             } else {
-                color = getColor(isOut ? key_chat_outBubble : key_chat_inBubble);
+                if (isSelected) {
+                    color = getColor(isOut ? key_chat_outBubbleSelected : key_chat_inBubbleSelected);
+                } else {
+                    color = getColor(isOut ? key_chat_outBubble : key_chat_inBubble);
+                }
             }
 
             boolean drawWithShadow = gradientShader == null && !isSelected && !isCrossfadeBackground;
@@ -725,7 +739,12 @@ public class Theme {
             int padding = dp(2);
             int rad;
             int nearRad;
-            if (overrideRoundRadius != 0) {
+            int smallRad = dp(6);
+            if (SharedConfig.liquidGlassEnabled) {
+                rad = dp(20);
+                nearRad = dp(7);
+                smallRad = dp(6);
+            } else if (overrideRoundRadius != 0) {
                 rad = overrideRoundRadius;
                 nearRad = overrideRoundRadius;
             } else if (overrideRounding > 0) {
@@ -738,7 +757,6 @@ public class Theme {
                 rad = dp(SharedConfig.bubbleRadius);
                 nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
             }
-            int smallRad = dp(6);
 
             Paint p = paintToUse == null ? paint : paintToUse;
 
@@ -772,6 +790,23 @@ public class Theme {
             }
 
             canvas.drawPath(path, p);
+            if (SharedConfig.liquidGlassEnabled && paintToUse == null) {
+                if (glassStrokePaint == null) {
+                    glassStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    glassStrokePaint.setStyle(Paint.Style.STROKE);
+                    glassStrokePaint.setStrokeWidth(dp(1));
+                }
+                if (isOut) {
+                    int accent = SharedConfig.liquidGlassAccentColor;
+                    int r = Color.red(accent);
+                    int g = Color.green(accent);
+                    int b = Color.blue(accent);
+                    glassStrokePaint.setColor(Color.argb((int)(255 * 0.38f), r, g, b));
+                } else {
+                    glassStrokePaint.setColor(0x1AFFFFFF); // rgba(255, 255, 255, 0.10)
+                }
+                canvas.drawPath(path, glassStrokePaint);
+            }
             if (gradientShader != null && isSelected && paintToUse == null) {
                 int color = getColor(key_chat_outBubbleGradientSelectedOverlay);
                 selectedPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * alpha / 255f)));
@@ -4199,6 +4234,29 @@ public class Theme {
     public static final int key_glass_tabSelectedText = colorsCount++;
     public static final int key_glass_tabUnselected = colorsCount++;
 
+    // Liquid Glass Design System Keys
+    public static final int key_glass_background = colorsCount++;
+    public static final int key_glass_accent = colorsCount++;
+    public static final int key_glass_accent_text = colorsCount++;
+    public static final int key_glass_text_primary = colorsCount++;
+    public static final int key_glass_text_secondary = colorsCount++;
+    public static final int key_glass_icon_inactive = colorsCount++;
+    public static final int key_glass_danger = colorsCount++;
+
+    public static final int key_glass_l1_fill = colorsCount++;
+    public static final int key_glass_l1_stroke = colorsCount++;
+    public static final int key_glass_l1_highlight = colorsCount++;
+
+    public static final int key_glass_l2_fill = colorsCount++;
+    public static final int key_glass_l2_stroke = colorsCount++;
+    public static final int key_glass_l2_highlight = colorsCount++;
+    public static final int key_glass_l2_highlight_bottom = colorsCount++;
+
+    public static final int key_glass_l3_fill = colorsCount++;
+    public static final int key_glass_l3_stroke = colorsCount++;
+    public static final int key_glass_l3_highlight = colorsCount++;
+    public static final int key_glass_dialog_fill = colorsCount++;
+
     public static final int key_botKeyboard_button_primary = colorsCount++;
     public static final int key_botKeyboard_button_danger = colorsCount++;
     public static final int key_botKeyboard_button_success = colorsCount++;
@@ -4630,7 +4688,7 @@ public class Theme {
                 new int[]    {          0,                             52,                            46,                            57,                            45,                            64,                            52,                            35,                            36,                            41,                            50,                            50,                            35,                            38,                            37,                            30 }
                 );
         sortAccents(themeInfo);
-        themes.add(currentDayTheme = defaultTheme = themeInfo);
+        themes.add(currentDayTheme = themeInfo);
         themesDict.put("Blue", themeInfo);
 
         themeInfo = new ThemeInfo();
@@ -4655,7 +4713,7 @@ public class Theme {
                 );
         sortAccents(themeInfo);
         themes.add(themeInfo);
-        themesDict.put("Dark Blue", currentNightTheme = themeInfo);
+        themesDict.put("Dark Blue", currentNightTheme = defaultTheme = themeInfo);
 
         themeInfo = new ThemeInfo();
         themeInfo.name = "Arctic Blue";
@@ -4792,6 +4850,11 @@ public class Theme {
                     SharedPreferences.Editor editor = themeConfig.edit();
                     editor.putString("lastDayTheme", applyingTheme.getKey());
                     editor.commit();
+                }
+            } else {
+                applyingTheme = themeDarkBlue;
+                if (applyingTheme != null) {
+                    applyingTheme.currentAccentId = 9;
                 }
             }
 
@@ -8487,61 +8550,97 @@ public class Theme {
         if (dialogs_namePaint == null) {
             return;
         }
-        for (int a = 0; a < 2; a++) {
-            dialogs_namePaint[a].setColor(getColor(key_chats_name));
-            dialogs_nameEncryptedPaint[a].setColor(getColor(key_chats_secretName));
-            dialogs_messagePaint[a].setColor(dialogs_messagePaint[a].linkColor = getColor(key_chats_message));
-            dialogs_messagePrintingPaint[a].setColor(getColor(key_chats_actionMessage));
+        if (SharedConfig.liquidGlassEnabled) {
+            int accent = SharedConfig.liquidGlassAccentColor;
+            for (int a = 0; a < 2; a++) {
+                dialogs_namePaint[a].setColor(0xFFF2F4F7);
+                dialogs_namePaint[a].setTextSize(dp(17));
+                dialogs_nameEncryptedPaint[a].setColor(0xFFF2F4F7);
+                dialogs_nameEncryptedPaint[a].setTextSize(dp(17));
+                dialogs_messagePaint[a].setColor(dialogs_messagePaint[a].linkColor = 0xFFA3ABB8);
+                dialogs_messagePaint[a].setTextSize(dp(15));
+                dialogs_messagePrintingPaint[a].setColor(accent);
+                dialogs_messagePrintingPaint[a].setTextSize(dp(15));
+            }
+            dialogs_messageNamePaint.setColor(dialogs_messageNamePaint.linkColor = 0xFFD2D8E2);
+            dialogs_messageNamePaint.setTextSize(dp(15));
+            dialogs_timePaint.setColor(0xFFA3ABB8);
+            dialogs_timePaint.setTextSize(dp(13));
+            dialogs_timePaintBold.setColor(0xFFF2F4F7);
+            dialogs_timePaintBold.setTextSize(dp(13));
+            dialogs_timePaintBoldAccent.setColor(accent);
+            dialogs_timePaintBoldAccent.setTextSize(dp(13));
+
+            dialogs_actionMessagePaint.setColor(accent);
+
+            dialogs_checkDrawable.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
+            dialogs_checkReadDrawable.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
+            dialogs_halfCheckDrawable.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
+            dialogs_clockDrawable.setColorFilter(new PorterDuffColorFilter(0xFFA3ABB8, PorterDuff.Mode.SRC_IN));
+
+            dialogs_pinnedDrawable.setColorFilter(new PorterDuffColorFilter(0xFFC3C9D4, PorterDuff.Mode.SRC_IN));
+            dialogs_pinnedDrawable2.setColorFilter(new PorterDuffColorFilter(0xFFC3C9D4, PorterDuff.Mode.SRC_IN));
+            dialogs_pinnedDrawable2Accent.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
+
+            dialogs_verifiedDrawable.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
+            dialogs_verifiedCheckDrawable.setColorFilter(new PorterDuffColorFilter(0xFF04241A, PorterDuff.Mode.SRC_IN));
+        } else {
+            for (int a = 0; a < 2; a++) {
+                dialogs_namePaint[a].setColor(getColor(key_chats_name));
+                dialogs_nameEncryptedPaint[a].setColor(getColor(key_chats_secretName));
+                dialogs_messagePaint[a].setColor(dialogs_messagePaint[a].linkColor = getColor(key_chats_message));
+                dialogs_messagePrintingPaint[a].setColor(getColor(key_chats_actionMessage));
+            }
+            dialogs_searchNamePaint.setColor(getColor(key_chats_name));
+            dialogs_searchNameEncryptedPaint.setColor(getColor(key_chats_secretName));
+            dialogs_messageNamePaint.setColor(dialogs_messageNamePaint.linkColor = getColor(key_chats_nameMessage_threeLines));
+            dialogs_tabletSeletedPaint.setColor(getColor(key_chats_tabletSelectedOverlay));
+            dialogs_pinnedPaint.setColor(getColor(key_chats_pinnedOverlay));
+            dialogs_timePaint.setColor(getColor(key_chats_date));
+            dialogs_timePaintBold.setColor(getColor(key_chats_date_bold));
+            dialogs_timePaintBoldAccent.setColor(getColor(key_telegram_color_text));
+            dialogs_countTextPaint.setColor(getColor(key_chats_unreadCounterText));
+            dialogs_countTextPaint2.setColor(getColor(key_chats_unreadCounterText));
+            dialogs_archiveTextPaint.setColor(getColor(key_chats_archiveText));
+            dialogs_archiveTextPaintSmall.setColor(getColor(key_chats_archiveText));
+            dialogs_countPaint.setColor(getColor(key_chats_unreadCounter));
+            dialogs_countGrayPaint.setColor(getColor(key_chats_unreadCounterMuted));
+            dialogs_actionMessagePaint.setColor(getColor(key_chats_actionMessage));
+            dialogs_errorPaint.setColor(getColor(key_chats_sentError));
+            dialogs_onlinePaint.setColor(getColor(key_windowBackgroundWhiteBlueText3));
+            dialogs_offlinePaint.setColor(getColor(key_windowBackgroundWhiteGrayText3));
+
+            setDrawableColorByKey(dialogs_lockDrawable, key_chats_secretIcon);
+            setDrawableColorByKey(dialogs_lock2Drawable, key_chats_pinnedIcon);
+            setDrawableColorByKey(dialogs_checkDrawable, key_chats_sentCheck);
+            setDrawableColorByKey(dialogs_communityCardsDrawable, key_windowBackgroundWhiteBlackText);
+            setDrawableColorByKey(dialogs_checkReadDrawable, key_chats_sentReadCheck);
+            setDrawableColorByKey(dialogs_halfCheckDrawable, key_chats_sentReadCheck);
+            setDrawableColorByKey(dialogs_clockDrawable, key_chats_sentClock);
+            setDrawableColorByKey(dialogs_errorDrawable, key_chats_sentErrorIcon);
+            setDrawableColorByKey(dialogs_pinnedDrawable, key_chats_pinnedIcon);
+            setDrawableColorByKey(dialogs_pinnedDrawable2, key_chats_pinnedIcon);
+            setDrawableColorByKey(dialogs_pinnedDrawable2Accent, key_telegram_color_text);
+            setDrawableColorByKey(dialogs_reorderDrawable, key_chats_pinnedIcon);
+            setDrawableColorByKey(dialogs_muteDrawable, key_chats_muteIcon);
+            setDrawableColorByKey(dialogs_unmuteDrawable, key_chats_muteIcon);
+            setDrawableColorByKey(dialogs_hiddenDrawable, key_chats_muteIcon);
+
+            setDrawableColorByKey(dialogs_mentionDrawable, key_chats_unreadCounter);
+            setDrawableColorByKey(dialogs_reactionsMentionDrawable, key_dialogReactionMentionBackground);
+            setDrawableColorByKey(dialogs_pollMentionDrawable, key_color_purple);
+
+            setDrawableColorByKey(dialogs_mentionDrawableMuted, key_chats_unreadCounterMuted);
+            setDrawableColorByKey(dialogs_reactionsMentionDrawableMuted, key_chats_unreadCounterMuted);
+            setDrawableColorByKey(dialogs_pollMentionDrawableMuted, key_chats_unreadCounterMuted);
+
+            setDrawableColorByKey(dialogs_forum_arrowDrawable, key_chats_message);
+            setDrawableColorByKey(dialogs_verifiedDrawable, key_chats_verifiedBackground);
+            setDrawableColorByKey(dialogs_verifiedCheckDrawable, key_chats_verifiedCheck);
+            setDrawableColorByKey(dialogs_holidayDrawable, key_actionBarDefaultTitle);
+            setDrawableColorByKey(dialogs_scamDrawable, key_chats_draft);
+            setDrawableColorByKey(dialogs_fakeDrawable, key_chats_draft);
         }
-        dialogs_searchNamePaint.setColor(getColor(key_chats_name));
-        dialogs_searchNameEncryptedPaint.setColor(getColor(key_chats_secretName));
-        dialogs_messageNamePaint.setColor(dialogs_messageNamePaint.linkColor = getColor(key_chats_nameMessage_threeLines));
-        dialogs_tabletSeletedPaint.setColor(getColor(key_chats_tabletSelectedOverlay));
-        dialogs_pinnedPaint.setColor(getColor(key_chats_pinnedOverlay));
-        dialogs_timePaint.setColor(getColor(key_chats_date));
-        dialogs_timePaintBold.setColor(getColor(key_chats_date_bold));
-        dialogs_timePaintBoldAccent.setColor(getColor(key_telegram_color_text));
-        dialogs_countTextPaint.setColor(getColor(key_chats_unreadCounterText));
-        dialogs_countTextPaint2.setColor(getColor(key_chats_unreadCounterText));
-        dialogs_archiveTextPaint.setColor(getColor(key_chats_archiveText));
-        dialogs_archiveTextPaintSmall.setColor(getColor(key_chats_archiveText));
-        dialogs_countPaint.setColor(getColor(key_chats_unreadCounter));
-        dialogs_countGrayPaint.setColor(getColor(key_chats_unreadCounterMuted));
-        dialogs_actionMessagePaint.setColor(getColor(key_chats_actionMessage));
-        dialogs_errorPaint.setColor(getColor(key_chats_sentError));
-        dialogs_onlinePaint.setColor(getColor(key_windowBackgroundWhiteBlueText3));
-        dialogs_offlinePaint.setColor(getColor(key_windowBackgroundWhiteGrayText3));
-
-        setDrawableColorByKey(dialogs_lockDrawable, key_chats_secretIcon);
-        setDrawableColorByKey(dialogs_lock2Drawable, key_chats_pinnedIcon);
-        setDrawableColorByKey(dialogs_checkDrawable, key_chats_sentCheck);
-        setDrawableColorByKey(dialogs_communityCardsDrawable, key_windowBackgroundWhiteBlackText);
-        setDrawableColorByKey(dialogs_checkReadDrawable, key_chats_sentReadCheck);
-        setDrawableColorByKey(dialogs_halfCheckDrawable, key_chats_sentReadCheck);
-        setDrawableColorByKey(dialogs_clockDrawable, key_chats_sentClock);
-        setDrawableColorByKey(dialogs_errorDrawable, key_chats_sentErrorIcon);
-        setDrawableColorByKey(dialogs_pinnedDrawable, key_chats_pinnedIcon);
-        setDrawableColorByKey(dialogs_pinnedDrawable2, key_chats_pinnedIcon);
-        setDrawableColorByKey(dialogs_pinnedDrawable2Accent, key_telegram_color_text);
-        setDrawableColorByKey(dialogs_reorderDrawable, key_chats_pinnedIcon);
-        setDrawableColorByKey(dialogs_muteDrawable, key_chats_muteIcon);
-        setDrawableColorByKey(dialogs_unmuteDrawable, key_chats_muteIcon);
-        setDrawableColorByKey(dialogs_hiddenDrawable, key_chats_muteIcon);
-
-        setDrawableColorByKey(dialogs_mentionDrawable, key_chats_unreadCounter);
-        setDrawableColorByKey(dialogs_reactionsMentionDrawable, key_dialogReactionMentionBackground);
-        setDrawableColorByKey(dialogs_pollMentionDrawable, key_color_purple);
-
-        setDrawableColorByKey(dialogs_mentionDrawableMuted, key_chats_unreadCounterMuted);
-        setDrawableColorByKey(dialogs_reactionsMentionDrawableMuted, key_chats_unreadCounterMuted);
-        setDrawableColorByKey(dialogs_pollMentionDrawableMuted, key_chats_unreadCounterMuted);
-
-        setDrawableColorByKey(dialogs_forum_arrowDrawable, key_chats_message);
-        setDrawableColorByKey(dialogs_verifiedDrawable, key_chats_verifiedBackground);
-        setDrawableColorByKey(dialogs_verifiedCheckDrawable, key_chats_verifiedCheck);
-        setDrawableColorByKey(dialogs_holidayDrawable, key_actionBarDefaultTitle);
-        setDrawableColorByKey(dialogs_scamDrawable, key_chats_draft);
-        setDrawableColorByKey(dialogs_fakeDrawable, key_chats_draft);
     }
 
     public static void destroyResources() {
@@ -8980,7 +9079,11 @@ public class Theme {
             chat_adminPaint.setTextSize(dp(smallerDp - 1));
             chat_ephemeralPaint.setTextSize(dp(12));
             float timeDp = 2 * (SharedConfig.fontSize - 16) / 3f + 12;
-            chat_timePaint.setTextSize(dp(12));
+            if (SharedConfig.liquidGlassEnabled) {
+                chat_timePaint.setTextSize(dp(11.5f));
+            } else {
+                chat_timePaint.setTextSize(dp(12));
+            }
             chat_gamePaint.setTextSize(dp(13));
             chat_shipmentPaint.setTextSize(dp(13));
             chat_instantViewPaint.setTextSize(dp(13));
@@ -9028,12 +9131,22 @@ public class Theme {
             setDrawableColorByKey(chat_msgInSelectedDrawable, key_chat_inBubbleSelected);
             setDrawableColorByKey(chat_msgInMediaDrawable, key_chat_inBubble);
             setDrawableColorByKey(chat_msgInMediaSelectedDrawable, key_chat_inBubbleSelected);
-            setDrawableColorByKey(chat_msgOutCheckDrawable, key_chat_outSentCheck);
-            setDrawableColorByKey(chat_msgOutCheckSelectedDrawable, key_chat_outSentCheckSelected);
-            setDrawableColorByKey(chat_msgOutCheckReadDrawable, key_chat_outSentCheckRead);
-            setDrawableColorByKey(chat_msgOutCheckReadSelectedDrawable, key_chat_outSentCheckReadSelected);
-            setDrawableColorByKey(chat_msgOutHalfCheckDrawable, key_chat_outSentCheckRead);
-            setDrawableColorByKey(chat_msgOutHalfCheckSelectedDrawable, key_chat_outSentCheckReadSelected);
+            if (SharedConfig.liquidGlassEnabled) {
+                int accent = SharedConfig.liquidGlassAccentColor;
+                setDrawableColor(chat_msgOutCheckDrawable, accent);
+                setDrawableColor(chat_msgOutCheckSelectedDrawable, accent);
+                setDrawableColor(chat_msgOutCheckReadDrawable, accent);
+                setDrawableColor(chat_msgOutCheckReadSelectedDrawable, accent);
+                setDrawableColor(chat_msgOutHalfCheckDrawable, accent);
+                setDrawableColor(chat_msgOutHalfCheckSelectedDrawable, accent);
+            } else {
+                setDrawableColorByKey(chat_msgOutCheckDrawable, key_chat_outSentCheck);
+                setDrawableColorByKey(chat_msgOutCheckSelectedDrawable, key_chat_outSentCheckSelected);
+                setDrawableColorByKey(chat_msgOutCheckReadDrawable, key_chat_outSentCheckRead);
+                setDrawableColorByKey(chat_msgOutCheckReadSelectedDrawable, key_chat_outSentCheckReadSelected);
+                setDrawableColorByKey(chat_msgOutHalfCheckDrawable, key_chat_outSentCheckRead);
+                setDrawableColorByKey(chat_msgOutHalfCheckSelectedDrawable, key_chat_outSentCheckReadSelected);
+            }
             setDrawableColorByKey(chat_msgMediaCheckDrawable, key_chat_mediaSentCheck);
             setDrawableColorByKey(chat_msgMediaHalfCheckDrawable, key_chat_mediaSentCheck);
             setDrawableColorByKey(chat_msgStickerCheckDrawable, key_chat_serviceText);

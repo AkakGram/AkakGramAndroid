@@ -55,6 +55,7 @@ import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -442,23 +443,36 @@ public class FilterTabsView extends FrameLayout {
             }
 
             if (animateCounterEnter || counterText != null || showRemove && (isEditing || editingStartAnimationProgress != 0)) {
-                if (aBackgroundColorKey < 0) {
-                    textCounterPaint.setColor(Theme.getColor(backgroundColorKey, resourcesProvider));
-                } else {
-                    int color1 = Theme.getColor(backgroundColorKey, resourcesProvider);
-                    int color2 = Theme.getColor(aBackgroundColorKey, resourcesProvider);
-                    textCounterPaint.setColor(ColorUtils.blendARGB(color1, color2, animationValue));
-                }
-                if (Theme.hasThemeKey(unreadKey) && Theme.hasThemeKey(unreadOtherKey)) {
-                    int color1 = Theme.getColor(unreadKey, resourcesProvider);
-                    if ((animatingIndicator || manualScrollingToPosition != -1) && (currentTab.id == id1 || currentTab.id == id2)) {
-                        int color3 = Theme.getColor(unreadOtherKey, resourcesProvider);
-                        counterPaint.setColor(ColorUtils.blendARGB(color3, color1, animatingIndicatorProgress));
+                if (SharedConfig.liquidGlassEnabled) {
+                    boolean isActive = (selectedTabId == currentTab.id);
+                    if (isActive) {
+                        textPaint.setColor(0xFFF2F4F7);
+                        counterPaint.setColor(SharedConfig.liquidGlassAccentColor);
+                        textCounterPaint.setColor(0xFF04241A);
                     } else {
-                        counterPaint.setColor(color1);
+                        textPaint.setColor(0xFFA3ABB8);
+                        counterPaint.setColor(0x1FFFFFFF); // rgba(255,255,255,0.12)
+                        textCounterPaint.setColor(0xFFF2F4F7);
                     }
                 } else {
-                    counterPaint.setColor(textPaint.getColor());
+                    if (aBackgroundColorKey < 0) {
+                        textCounterPaint.setColor(Theme.getColor(backgroundColorKey, resourcesProvider));
+                    } else {
+                        int color1 = Theme.getColor(backgroundColorKey, resourcesProvider);
+                        int color2 = Theme.getColor(aBackgroundColorKey, resourcesProvider);
+                        textCounterPaint.setColor(ColorUtils.blendARGB(color1, color2, animationValue));
+                    }
+                    if (Theme.hasThemeKey(unreadKey) && Theme.hasThemeKey(unreadOtherKey)) {
+                        int color1 = Theme.getColor(unreadKey, resourcesProvider);
+                        if ((animatingIndicator || manualScrollingToPosition != -1) && (currentTab.id == id1 || currentTab.id == id2)) {
+                            int color3 = Theme.getColor(unreadOtherKey, resourcesProvider);
+                            counterPaint.setColor(ColorUtils.blendARGB(color3, color1, animatingIndicatorProgress));
+                        } else {
+                            counterPaint.setColor(color1);
+                        }
+                    } else {
+                        counterPaint.setColor(textPaint.getColor());
+                    }
                 }
 
                 float x;
@@ -927,7 +941,7 @@ public class FilterTabsView extends FrameLayout {
 
             @Override
             protected boolean allowSelectChildAtPosition(View child) {
-                return FilterTabsView.this.isEnabled() && delegate.canPerformActions();
+                return (FilterTabsView.this.isEnabled() || animatingIndicator) && delegate.canPerformActions();
             }
 
             @Override
@@ -1102,6 +1116,7 @@ public class FilterTabsView extends FrameLayout {
         listView.setPadding(listViewPaddingH, 0, listViewPaddingH, 0);
         listView.setClipToPadding(false);
         listView.setDrawSelectorBehind(true);
+        listView.setInstantClick(true);
         adapter = new ListAdapter(context);
         adapter.setHasStableIds(true);
         listView.setAdapter(adapter);
@@ -1507,9 +1522,22 @@ public class FilterTabsView extends FrameLayout {
             final float add = additionalTabWidth / 2f;
 
             final int y = height / 2 - dp(14);
-            selectorDrawable.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y, (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
-            selectorDrawable.setAlpha(31);
-            selectorDrawable.draw(canvas);
+            if (SharedConfig.liquidGlassEnabled) {
+                float rad = dp(14);
+                RectF r = new RectF(indicatorX - dp(TAB_INTERNAL_PADDING) - add, y, indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add, y + dp(28));
+                Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                fillPaint.setColor(Theme.getColor(Theme.key_glass_l3_fill));
+                canvas.drawRoundRect(r, rad, rad, fillPaint);
+                Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                strokePaint.setStyle(Paint.Style.STROKE);
+                strokePaint.setStrokeWidth(dp(1));
+                strokePaint.setColor(Theme.getColor(Theme.key_glass_l3_stroke));
+                canvas.drawRoundRect(r, rad, rad, strokePaint);
+            } else {
+                selectorDrawable.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y, (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
+                selectorDrawable.setAlpha(31);
+                selectorDrawable.draw(canvas);
+            }
             canvas.restore();
         }
     }

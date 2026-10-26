@@ -17,6 +17,7 @@ import android.view.View;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 public class DividerCell extends View {
@@ -42,6 +43,9 @@ public class DividerCell extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (SharedConfig.liquidGlassEnabled) {
+            return;
+        }
         if (forceDarkTheme) {
             paint.setColor(ColorUtils.blendARGB(Color.BLACK, Theme.getColor(Theme.key_voipgroup_dialogBackground, resourcesProvider),  0.2f));
         } else {

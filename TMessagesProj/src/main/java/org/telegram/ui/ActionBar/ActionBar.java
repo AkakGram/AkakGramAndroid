@@ -21,6 +21,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
+import android.os.Build;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -195,6 +196,18 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private boolean glassMode;
     private boolean glassOnlyBack;
     private boolean glassModeIsForum;
+    private int customActionBarHeight;
+    private boolean isLiquidGlassLogo;
+
+    public void setCustomActionBarHeight(int heightInDp) {
+        customActionBarHeight = heightInDp > 0 ? dp(heightInDp) : 0;
+        requestLayout();
+    }
+
+    public void setIsLiquidGlassLogo(boolean value) {
+        isLiquidGlassLogo = value;
+        requestLayout();
+    }
 
     private ChatAvatarContainer chatAvatarContainer;
 
@@ -1373,7 +1386,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
-        int actionBarHeight = getCurrentActionBarHeight();
+        int actionBarHeight = getCurrentActionBarHeightInstance();
         int actionBarHeightSpec = MeasureSpec.makeMeasureSpec(actionBarHeight, MeasureSpec.EXACTLY);
 
         ignoreLayoutRequest = true;
@@ -1427,7 +1440,20 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (titleTextView[0] != null && titleTextView[0].getVisibility() != GONE || subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
                 int availableWidth = width - (menu != null ? menu.getMeasuredWidth() : 0) - dp(16) - textLeft - titleRightMargin;
 
-                if (((fromBottom && i == 0) || (!fromBottom && i == 1)) && overlayTitleAnimation && titleAnimationRunning) {
+                if (isLiquidGlassLogo && titleTextView[i] != null) {
+                    int size = 19;
+                    titleTextView[i].setTextSize(size);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        titleTextView[i].getTextPaint().setLetterSpacing(-0.03f);
+                    }
+                    CharSequence text = titleTextView[i].getText();
+                    if (text != null && availableWidth > 0) {
+                        while (size > 14 && titleTextView[i].getTextPaint().measureText(text, 0, text.length()) > availableWidth) {
+                            size--;
+                            titleTextView[i].setTextSize(size);
+                        }
+                    }
+                } else if (((fromBottom && i == 0) || (!fromBottom && i == 1)) && overlayTitleAnimation && titleAnimationRunning) {
                     titleTextView[i].setTextSize(glassMode ? 17 : !AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
                 } else {
                     if (titleTextView[0] != null && titleTextView[0].getVisibility() != GONE && subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
@@ -1452,7 +1478,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
 
                 if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
-                    titleTextView[i].measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(24) + titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom(), MeasureSpec.AT_MOST));
+                    int titleMeasureHeight = isLiquidGlassLogo ? dp(36) : dp(24);
+                    titleTextView[i].measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(titleMeasureHeight + titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom(), MeasureSpec.AT_MOST));
                     if (centerScale) {
                         CharSequence text = titleTextView[i].getText();
                         titleTextView[i].setPivotX(titleTextView[i].getTextPaint().measureText(text, 0, text.length()) / 2f);
@@ -1523,12 +1550,12 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
                 int textTop;
                 if (((fromBottom && i == 0) || (!fromBottom && i == 1)) && overlayTitleAnimation && titleAnimationRunning) {
-                    textTop = (getCurrentActionBarHeight() - titleTextView[i].getTextHeight()) / 2;
+                    textTop = (getCurrentActionBarHeightInstance() - titleTextView[i].getTextHeight()) / 2;
                 } else {
                     if ((subtitleTextView != null && subtitleTextView.getVisibility() != GONE)) {
-                        textTop = (getCurrentActionBarHeight() / 2 - titleTextView[i].getTextHeight()) / 2 + dp(2) + dp(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 2 : 3);
+                        textTop = (getCurrentActionBarHeightInstance() / 2 - titleTextView[i].getTextHeight()) / 2 + dp(2) + dp(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 2 : 3);
                     } else {
-                        textTop = (getCurrentActionBarHeight() - titleTextView[i].getTextHeight()) / 2;
+                        textTop = (getCurrentActionBarHeightInstance() - titleTextView[i].getTextHeight()) / 2;
                     }
                 }
                 titleTextView[i].layout(textLeft, additionalTop + textTop - titleTextView[i].getPaddingTop(), textLeft + titleTextView[i].getMeasuredWidth(), additionalTop + textTop + titleTextView[i].getTextHeight() - titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom());
@@ -1850,6 +1877,13 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             return false;
         }
         return super.onTouchEvent(event) || interceptTouches;
+    }
+
+    public int getCurrentActionBarHeightInstance() {
+        if (customActionBarHeight > 0) {
+            return customActionBarHeight;
+        }
+        return getCurrentActionBarHeight();
     }
 
     public static int getCurrentActionBarHeight() {

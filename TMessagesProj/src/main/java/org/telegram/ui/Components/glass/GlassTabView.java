@@ -27,6 +27,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
@@ -154,14 +155,34 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         if (selectedFactor > 0 && !skipDrawSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
-            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
-            tmpRectF.set(0, 0, viewWidth, getHeight());
-            final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
-            final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
-            canvas.save();
-            canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
-            canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
-            canvas.restore();
+            if (SharedConfig.liquidGlassEnabled) {
+                tmpRectF.set(dp(4), dp(4), viewWidth - dp(4), getHeight() - dp(4));
+                final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
+                final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
+                canvas.save();
+                canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
+                // Level 3 glass fill
+                paintCounterBackground.setColor(Theme.getColor(Theme.key_glass_l3_fill));
+                paintCounterBackground.setAlpha((int) (Color.alpha(Theme.getColor(Theme.key_glass_l3_fill)) * alpha));
+                canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+                // Level 3 glass stroke
+                paintCounterBackground.setColor(Theme.getColor(Theme.key_glass_l3_stroke));
+                paintCounterBackground.setStyle(Paint.Style.STROKE);
+                paintCounterBackground.setStrokeWidth(dp(1));
+                paintCounterBackground.setAlpha((int) (Color.alpha(Theme.getColor(Theme.key_glass_l3_stroke)) * alpha));
+                canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+                paintCounterBackground.setStyle(Paint.Style.FILL);
+                canvas.restore();
+            } else {
+                paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
+                tmpRectF.set(0, 0, viewWidth, getHeight());
+                final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
+                final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
+                canvas.save();
+                canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
+                canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+                canvas.restore();
+            }
         }
 
         final float hasCounter = (usePremiumCounter ? 1f : isHasCounterAnimator.getFloatValue()) * attachScale;
@@ -265,9 +286,15 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     public void updateColorsLottie() {
-        colorDefault = Theme.getColor(Theme.key_glass_tabUnselected, resourcesProvider);
-        colorSelected = Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider);
-        colorSelectedText = Theme.getColor(Theme.key_glass_tabSelectedText, resourcesProvider);
+        if (SharedConfig.liquidGlassEnabled) {
+            colorDefault = 0xFFC3C9D4;
+            colorSelected = SharedConfig.liquidGlassAccentColor;
+            colorSelectedText = SharedConfig.liquidGlassAccentColor;
+        } else {
+            colorDefault = Theme.getColor(Theme.key_glass_tabUnselected, resourcesProvider);
+            colorSelected = Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider);
+            colorSelectedText = Theme.getColor(Theme.key_glass_tabSelectedText, resourcesProvider);
+        }
         updateColors();
         invalidate();
     }

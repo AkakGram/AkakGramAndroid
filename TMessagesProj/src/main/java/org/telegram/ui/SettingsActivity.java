@@ -367,6 +367,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         });
         iBlur3Capture = new ViewGroupPartRenderer(listView, contentView, listView::drawChild);
         listView.addEdgeEffectListener(() -> listView.postOnAnimation(this::blur3_InvalidateBlur));
+        if (SharedConfig.liquidGlassEnabled) {
+            org.telegram.ui.Components.glass.GlowBackgroundView glowBg = new org.telegram.ui.Components.glass.GlowBackgroundView(context);
+            contentView.addView(glowBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         actionBarBackground = new View(context) {
@@ -412,7 +416,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         avatarDrawable = new AvatarDrawable();
         avatarView = new BackupImageView(context);
-        avatarView.setRoundRadius(dp(90));
+        avatarView.setRoundRadius(dp(SharedConfig.liquidGlassEnabled ? 32 : 90));
         avatarContainer.addView(avatarView, LayoutHelper.createFrame(90, 90, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 15, 0, 0));
 
         avatarProgressView = new RadialProgressView(context) {
@@ -550,7 +554,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     public void updateColors() {
         actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        contentView.setBackgroundColor(SharedConfig.liquidGlassEnabled ? Color.TRANSPARENT : getThemedColor(Theme.key_windowBackgroundGray));
         titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
         searchItem.updateColor();

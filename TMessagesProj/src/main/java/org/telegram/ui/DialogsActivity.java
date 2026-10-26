@@ -58,7 +58,10 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
+import android.text.style.TypefaceSpan;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.StateSet;
@@ -897,7 +900,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 final boolean doNotClip = child == topPanelLayout || child == filterTabsView;
                 if (!doNotClip) {
-                    canvas.clipRect(0, -getY() + getActionBarTop() + getActionBarFullHeight(), getMeasuredWidth(), getMeasuredHeight());
+                    int clipTop = (int) (-getY() + getActionBarTop() + getActionBarFullHeight());
+                    if (filterTabsView != null && filterTabsView.getVisibility() == VISIBLE) {
+                        int tabsBottom = (int) (filterTabsView.getY() + filterTabsView.getHeight());
+                        if (tabsBottom > clipTop) {
+                            clipTop = tabsBottom;
+                        }
+                    }
+                    canvas.clipRect(0, clipTop, getMeasuredWidth(), getMeasuredHeight());
                 }
                 if (slideFragmentProgress != 1f) {
                     if (slideFragmentLite) {
@@ -1307,6 +1317,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 } else if (child == topPanelLayout || child == topBubblesFadeView || child == filterTabsView) {
                     childTop += actionBar.getMeasuredHeight();
                     childTop += dp(SEARCH_FIELD_HEIGHT);
+                    if (child == filterTabsView && SharedConfig.liquidGlassEnabled) {
+                        childTop += dp(6);
+                    }
                 } else if (dialogStoriesCell != null && dialogStoriesCell.getPremiumHint() == child) {
                     continue;
                 }
@@ -1329,7 +1342,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     allowMoving = true;
                 }
             }
-            return checkTabsAnimationInProgress() || filterTabsView != null && filterTabsView.isAnimatingIndicator() || onTouchEvent(ev);
+            if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && filterTabsView.getAlpha() > 0.1f) {
+                float x = ev.getX();
+                float y = ev.getY();
+                float tx = filterTabsView.getX();
+                float ty = filterTabsView.getY();
+                if (x >= tx && x <= tx + filterTabsView.getWidth() && y >= ty && y <= ty + filterTabsView.getHeight()) {
+                    return false;
+                }
+            }
+            return checkTabsAnimationInProgress() || onTouchEvent(ev);
         }
 
         @Override
@@ -2080,6 +2102,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             t -= dp(5 * Math.max(filterTabsVisibility, topPanelsVisibility));
             additionalPadding -= dp(5 * Math.max(filterTabsVisibility, topPanelsVisibility));
+
+            if (SharedConfig.liquidGlassEnabled && filterTabsVisibility > 0) {
+                int extraGap = (int) (dp(36) * filterTabsVisibility);
+                t += extraGap;
+                additionalPadding += extraGap;
+            }
 
             final int b = calculateListViewPaddingBottom();
             if (t != topPadding || b != getPaddingBottom()) {
@@ -3220,6 +3248,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         ActionBarMenu menu = actionBar.createMenu();
         menu.setTranslationX(-dp(5));
         searchItem = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true, false);
+        if (SharedConfig.liquidGlassEnabled) {
+            searchItem.setIsGlassButtonCircle(true);
+        }
         searchItem.setOnClickListener(v -> {
             showSearch(true, false, true);
             fragmentSearchFieldWatcher.toggleSearch(true);
@@ -3248,8 +3279,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
         if (initialDialogsType == DIALOGS_TYPE_ADD_USERS_TO || isArchive() && getDialogsArray(currentAccount, initialDialogsType, folderId, false).isEmpty()) {
             searchItem.setVisibility(View.GONE);
+        } else if (!SharedConfig.liquidGlassEnabled) {
+            searchItem.setVisibility(View.GONE);
         }
-        searchItem.setVisibility(View.GONE);
 
         if (!onlySelect && searchString == null && folderId == 0 && communityId == 0) {
             doneItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarDefaultSelector), getThemedColor(Theme.key_actionBarDefaultIcon), true);
@@ -3440,6 +3472,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         if (initialDialogsType == DIALOGS_TYPE_DEFAULT) {
             optionsItem = menu.addItem(4, R.drawable.ic_ab_other);
+            if (SharedConfig.liquidGlassEnabled) {
+                optionsItem.setIsGlassButtonCircle(true);
+            }
             optionsItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             optionsItem.setOnClickListener(v -> {
                 getContactsController().loadGlobalPrivacySetting();
@@ -3513,11 +3548,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
                 statusDrawable.center = true;
-                logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
-                logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
-                logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
                 SpannableStringBuilder ssb = new SpannableStringBuilder("AkakGram");
-                ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (SharedConfig.liquidGlassEnabled) {
+                    ssb.setSpan(new ForegroundColorSpan(0xFFF2F4F7), 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    ssb.setSpan(new ForegroundColorSpan(SharedConfig.liquidGlassAccentColor), 4, 8, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, 8, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    actionBar.setCustomActionBarHeight(64);
+                    actionBar.setIsLiquidGlassLogo(true);
+                } else {
+                    logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
+                    int logoW = (int) (logoDrawable.getIntrinsicWidth() * 0.8f);
+                    int logoH = (int) (logoDrawable.getIntrinsicHeight() * 0.8f);
+                    logoDrawable.setBounds(0, dp(2), logoW, dp(2) + logoH);
+                    logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
+                    ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
@@ -4049,6 +4094,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 Blur3Utils.captureRelativeParent(searchViewPager, canvas, position, searchViewPager, contentView, searchViewAlpha);
             }
         };
+
+        if (SharedConfig.liquidGlassEnabled) {
+            org.telegram.ui.Components.glass.GlowBackgroundView glowBg = new org.telegram.ui.Components.glass.GlowBackgroundView(context);
+            contentView.addView(glowBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
 
         int pagesCount = folderId == 0 && communityId == 0 && (initialDialogsType == DIALOGS_TYPE_DEFAULT && !onlySelect || initialDialogsType == DIALOGS_TYPE_FORWARD) ? 2 : 1;
         viewPages = new ViewPage[pagesCount];
@@ -5151,12 +5201,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (filterTabsView != null) {
-            BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(filterTabsView, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
-            filterTabsViewBackground.setRadius(dp(18));
-            filterTabsViewBackground.setPadding(dp(6.666f));
-            filterTabsView.setPadding(0, dp(7), 0, dp(7));
-            filterTabsView.setBlurredBackground(filterTabsViewBackground);
-            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
+            if (SharedConfig.liquidGlassEnabled) {
+                org.telegram.ui.Components.glass.GlassDrawable glassBg = new org.telegram.ui.Components.glass.GlassDrawable(org.telegram.ui.Components.glass.GlassDrawable.LEVEL_MAIN);
+                glassBg.setIsCapsule(true);
+                filterTabsView.setPadding(dp(6), dp(10), dp(6), dp(10));
+                filterTabsView.setBackground(glassBg);
+            } else {
+                BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(filterTabsView, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
+                filterTabsViewBackground.setRadius(dp(18));
+                filterTabsViewBackground.setPadding(dp(6.666f));
+                filterTabsView.setPadding(0, dp(11), 0, dp(11));
+                filterTabsView.setBlurredBackground(filterTabsViewBackground);
+            }
+            int topMargin = SharedConfig.liquidGlassEnabled ? 6 : 0;
+            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 11 + 11, Gravity.TOP, 14, topMargin, 14, 0));
         }
 
         if (fragmentSearchField != null) {
@@ -8857,7 +8915,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateFloatingButtonOffset() {
-        final float top = -navigationBarHeight - additionFloatingButtonOffset - additionalFloatingTranslation;
+        final float top;
+        if (SharedConfig.liquidGlassEnabled && hasMainTabs) {
+            top = -navigationBarHeight - dp(70 + 20 + 16) - additionalFloatingTranslation;
+        } else {
+            top = -navigationBarHeight - additionFloatingButtonOffset - additionalFloatingTranslation;
+        }
         final float baseTranslationY = top
             - floatingButtonPanOffset;
 
@@ -8865,9 +8928,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             floatingButton3.setTranslationY(baseTranslationY);
         }
         if (floatingButtonStories != null) {
-            floatingButtonStories.setTranslationY(baseTranslationY - dp(52));
+            float storiesOffset = SharedConfig.liquidGlassEnabled ? dp(58 + 12) : dp(52);
+            floatingButtonStories.setTranslationY(baseTranslationY - storiesOffset);
             if (storyHint != null) {
-                storyHint.setTranslationY(baseTranslationY - dp(52));
+                storyHint.setTranslationY(baseTranslationY - storiesOffset);
             }
         }
     }
@@ -12978,7 +13042,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             @Override
             protected void dispatchDraw(@NonNull Canvas canvas) {
                 super.dispatchDraw(canvas);
-                if (searchTabsView != null || communityId != 0) {
+                if (!SharedConfig.liquidGlassEnabled && (searchTabsView != null || communityId != 0)) {
                     final int h = dp(36 + 7 + 7 + 4);
                     final int t = actionBar.getMeasuredHeight()
                         + dp(ADDITIONAL_LIST_HEIGHT_DP)
@@ -14213,6 +14277,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return (int) (windowInsetsStateHolder.getAnimatedMaxBottomInset() + dp(9) + chatInputViewsContainer.getInputBubbleHeight() + dp(7) + dp(2));
         } else if (communityId != 0) {
             return navigationBarHeight + dp(12 + 48 + 12);
+        } else if (SharedConfig.liquidGlassEnabled && hasMainTabs) {
+            return navigationBarHeight + dp(110);
         } else {
             return navigationBarHeight + additionNavigationBarHeight;
         }
@@ -14280,7 +14346,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void drawHeaderShadow(Canvas canvas, int sy) {
-        if (parentLayout == null || actionBar == null /*|| !actionBar.getCastShadows()*/) {
+        if (parentLayout == null || actionBar == null || SharedConfig.liquidGlassEnabled /*|| !actionBar.getCastShadows()*/) {
             return;
         }
 

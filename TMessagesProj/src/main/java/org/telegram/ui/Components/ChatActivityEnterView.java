@@ -36,6 +36,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
+import android.graphics.RadialGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -14809,6 +14810,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             count.setGravity(Gravity.CENTER);
         }
 
+        private Paint glassSheenPaint;
+        private Paint glassStrokePaint;
+        private Paint glassGlowPaint;
+
         private boolean locked;
         private Drawable lockIcon;
         private int lockIconColor;
@@ -15160,6 +15165,39 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (loadingShown > 0) {
                     canvas.restore();
                 }
+                if (SharedConfig.liquidGlassEnabled) {
+                    if (glassSheenPaint == null) {
+                        glassSheenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        LinearGradient sheen = new LinearGradient(
+                                AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top,
+                                AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.bottom,
+                                new int[]{0x73FFFFFF, 0x00FFFFFF},
+                                new float[]{0.0f, 0.75f},
+                                Shader.TileMode.CLAMP
+                        );
+                        glassSheenPaint.setShader(sheen);
+
+                        glassStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        glassStrokePaint.setStyle(Paint.Style.STROKE);
+                        glassStrokePaint.setStrokeWidth(dp(1));
+                        glassStrokePaint.setColor(0x80FFFFFF); // rgba(255,255,255,0.5)
+
+                        glassGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        int accent = SharedConfig.liquidGlassAccentColor;
+                        int glowColor = Color.argb(0x60, Color.red(accent), Color.green(accent), Color.blue(accent));
+                        RadialGradient glow = new RadialGradient(
+                                bCX, AndroidUtilities.rectTmp.bottom,
+                                r,
+                                new int[]{glowColor, Color.TRANSPARENT},
+                                new float[]{0.0f, 1.0f},
+                                Shader.TileMode.CLAMP
+                        );
+                        glassGlowPaint.setShader(glow);
+                    }
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, glassGlowPaint);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, glassSheenPaint);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, glassStrokePaint);
+                }
                 canvas.restore();
             }
 
@@ -15282,19 +15320,26 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         public void updateColors() {
             int color = isNewDesignSendButton ? Color.WHITE : Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
-            if (color != drawableColor) {
-                drawableColor = color;
-                drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-                int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
-                inactiveDrawable.setColorFilter(new PorterDuffColorFilter(Color.argb(0xb4, Color.red(c), Color.green(c), Color.blue(c)), PorterDuff.Mode.SRC_IN));
-                drawableInverse.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            }
-            if (isNewDesignSendButton) {
-                backgroundPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
-            } else if (shouldDrawBackground()) {
-                backgroundPaint.setColor(getFillColor());
+            if (SharedConfig.liquidGlassEnabled) {
+                backgroundPaint.setColor(SharedConfig.liquidGlassAccentColor);
+                drawableColor = 0xFF04241A;
+                drawable.setColorFilter(new PorterDuffColorFilter(0xFF04241A, PorterDuff.Mode.SRC_IN));
+                inactiveDrawable.setColorFilter(new PorterDuffColorFilter(0x8004241A, PorterDuff.Mode.SRC_IN));
             } else {
-                backgroundPaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 75));
+                if (color != drawableColor) {
+                    drawableColor = color;
+                    drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+                    int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
+                    inactiveDrawable.setColorFilter(new PorterDuffColorFilter(Color.argb(0xb4, Color.red(c), Color.green(c), Color.blue(c)), PorterDuff.Mode.SRC_IN));
+                    drawableInverse.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                }
+                if (isNewDesignSendButton) {
+                    backgroundPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
+                } else if (shouldDrawBackground()) {
+                    backgroundPaint.setColor(getFillColor());
+                } else {
+                    backgroundPaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 75));
+                }
             }
         }
 

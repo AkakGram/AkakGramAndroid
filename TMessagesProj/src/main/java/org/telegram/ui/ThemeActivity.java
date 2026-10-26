@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
@@ -208,6 +209,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int themeAccentListRow;
     private int themeInfoRow;
     private int chatBlurRow;
+    private int liquidGlassHeaderRow;
+    private int liquidGlassRow;
+    private int liquidGlassAccentRow;
+    private int liquidGlassBlurRow;
+    private int liquidGlassInfoRow;
     @Keep
     private int pauseOnRecordRow;
     @Keep
@@ -598,6 +604,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         bluetoothScoRow = -1;
         settings2Row = -1;
 
+        liquidGlassHeaderRow = -1;
+        liquidGlassRow = -1;
+        liquidGlassAccentRow = -1;
+        liquidGlassBlurRow = -1;
+        liquidGlassInfoRow = -1;
+
         swipeGestureHeaderRow = -1;
         swipeGestureRow = -1;
         swipeGestureInfoRow = -1;
@@ -667,6 +679,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             bubbleRadiusHeaderRow = rowCount++;
             bubbleRadiusRow = rowCount++;
             bubbleRadiusInfoRow = rowCount++;
+
+            liquidGlassHeaderRow = rowCount++;
+            liquidGlassRow = rowCount++;
+            liquidGlassAccentRow = rowCount++;
+            liquidGlassBlurRow = rowCount++;
+            liquidGlassInfoRow = rowCount++;
 
             chatListHeaderRow = rowCount++;
             chatListRow = rowCount++;
@@ -1092,7 +1110,13 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         listAdapter = new ListAdapter(context);
 
         FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        if (SharedConfig.liquidGlassEnabled) {
+            frameLayout.setBackgroundColor(Color.TRANSPARENT);
+            org.telegram.ui.Components.glass.GlowBackgroundView glowBg = new org.telegram.ui.Components.glass.GlowBackgroundView(context);
+            frameLayout.addView(glowBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        } else {
+            frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        }
         fragmentView = frameLayout;
 
         listView = new RecyclerListView(context);
@@ -1376,6 +1400,41 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.chatBlurEnabled());
                 }
+            } else if (position == liquidGlassRow) {
+                SharedConfig.setLiquidGlassEnabled(!SharedConfig.liquidGlassEnabled);
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.liquidGlassEnabled);
+                }
+                if (context != null) {
+                    Theme.createDialogsResources(context);
+                    Theme.createChatResources(context, false);
+                }
+                updateRows(true);
+            } else if (position == liquidGlassBlurRow) {
+                SharedConfig.setLiquidGlassBlurEnabled(!SharedConfig.liquidGlassBlurEnabled);
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.liquidGlassBlurEnabled);
+                }
+            } else if (position == liquidGlassAccentRow) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle("Акцентный цвет");
+                CharSequence[] items = new CharSequence[]{"Мятный (#5EE0A0)", "Синий (#7AB8FF)", "Оранжевый (#FFB86B)", "Фиолетовый (#C79BFF)"};
+                int[] colors = new int[]{0xFF5EE0A0, 0xFF7AB8FF, 0xFFFFB86B, 0xFFC79BFF};
+                builder.setItems(items, (dialog, which) -> {
+                    SharedConfig.setLiquidGlassAccentColor(colors[which]);
+                    if (context != null) {
+                        Theme.createDialogsResources(context);
+                        Theme.createChatResources(context, false);
+                    }
+                    if (listAdapter != null) {
+                        listAdapter.notifyItemChanged(liquidGlassAccentRow);
+                    }
+                });
+                builder.setNegativeButton(getString("Cancel", R.string.Cancel), null);
+                showDialog(builder.create());
             } else if (position == nightThemeRow) {
                 if (LocaleController.isRTL && x <= dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - dp(76)) {
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
@@ -2519,6 +2578,16 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     } else if (position == bluetoothScoRow) {
                         cell.setTextAndValue(getString(R.string.MicrophoneForVoiceMessages), getString(SharedConfig.recordViaSco ? R.string.MicrophoneForVoiceMessagesSco : R.string.MicrophoneForVoiceMessagesBuiltIn), updateRecordViaSco, false);
                         updateRecordViaSco = false;
+                    } else if (position == liquidGlassAccentRow) {
+                        String name = "Мятный";
+                        if (SharedConfig.liquidGlassAccentColor == 0xFF7AB8FF) {
+                            name = "Синий";
+                        } else if (SharedConfig.liquidGlassAccentColor == 0xFFFFB86B) {
+                            name = "Оранжевый";
+                        } else if (SharedConfig.liquidGlassAccentColor == 0xFFC79BFF) {
+                            name = "Фиолетовый";
+                        }
+                        cell.setTextAndValue("Акцентный цвет", name, true);
                     }
                     break;
                 }
@@ -2587,6 +2656,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         headerCell.setText(getString("OtherSettings", R.string.OtherSettings));
                     } else if (position == mediaSoundHeaderRow) {
                         headerCell.setText(getString("MediaAndSoundSettings", R.string.MediaAndSoundSettings));
+                    } else if (position == liquidGlassHeaderRow) {
+                        headerCell.setText("Liquid Glass");
                     }
                     break;
                 }
@@ -2621,6 +2692,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndValueAndCheck(getString(R.string.ShowSensitiveContent), getString(R.string.ShowSensitiveContentInfo), getMessagesController().showSensitiveContent(), true, true);
                     } else if (position == chatBlurRow) {
                         textCheckCell.setTextAndCheck(getString("BlurInChat", R.string.BlurInChat), SharedConfig.chatBlurEnabled(), true);
+                    } else if (position == liquidGlassRow) {
+                        textCheckCell.setTextAndCheck("Liquid Glass UI", SharedConfig.liquidGlassEnabled, true);
+                    } else if (position == liquidGlassBlurRow) {
+                        textCheckCell.setTextAndValueAndCheck("Размытие стекла", "RenderEffect на Android 12+", SharedConfig.liquidGlassBlurEnabled, false, true);
                     }
                     break;
                 }
@@ -2733,14 +2808,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             if (position == scheduleFromRow || position == distanceRow ||
                     position == scheduleToRow || position == scheduleUpdateLocationRow ||
                     position == contactsReimportRow || position == contactsSortRow ||
-                    position == bluetoothScoRow || position == searchEngineRow) {
+                    position == bluetoothScoRow || position == searchEngineRow || position == liquidGlassAccentRow) {
                 return TYPE_TEXT_SETTING;
             } else if (position == automaticBrightnessInfoRow || position == scheduleLocationInfoRow || position == swipeGestureInfoRow || position == stickersInfoRow || position == liteModeInfoRow) {
                 return TYPE_TEXT_INFO_PRIVACY;
             } else if (position == themeInfoRow || position == nightTypeInfoRow || position == scheduleFromToInfoRow ||
                     position == settings2Row || position == newThemeInfoRow || position == chatListInfoRow || position == bubbleRadiusInfoRow ||
                     position == saveToGallerySectionRow || position == appIconShadowRow || position == lastShadowRow || position == stickersSectionRow ||
-                    position == mediaSoundSectionRow || position == otherSectionRow) {
+                    position == mediaSoundSectionRow || position == otherSectionRow || position == liquidGlassInfoRow) {
                 return TYPE_SHADOW;
             } else if (position == nightDisabledRow || position == nightScheduledRow || position == nightAutomaticRow || position == nightSystemDefaultRow) {
                 return TYPE_THEME_TYPE;
@@ -2748,13 +2823,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     position == settingsRow || position == themeHeaderRow || position == textSizeHeaderRow ||
                     position == chatListHeaderRow || position == bubbleRadiusHeaderRow || position == swipeGestureHeaderRow ||
                     position == selectThemeHeaderRow || position == appIconHeaderRow || position == mediaSoundHeaderRow ||
-                    position == otherHeaderRow) {
+                    position == otherHeaderRow || position == liquidGlassHeaderRow) {
                 return TYPE_HEADER;
             } else if (position == automaticBrightnessRow) {
                 return TYPE_BRIGHTNESS;
             } else if (position == scheduleLocationRow || position == sendByEnterRow ||
                     position == raiseToSpeakRow || position == raiseToListenRow || position == pauseOnRecordRow ||
-                    position == directShareRow || position == chatBlurRow || position == pauseOnMediaRow || position == nextMediaTapRow || position == sensitiveContentRow) {
+                    position == directShareRow || position == chatBlurRow || position == pauseOnMediaRow || position == nextMediaTapRow || position == sensitiveContentRow ||
+                    position == liquidGlassRow || position == liquidGlassBlurRow) {
                 return TYPE_TEXT_CHECK;
             } else if (position == textSizeRow) {
                 return TYPE_TEXT_SIZE;

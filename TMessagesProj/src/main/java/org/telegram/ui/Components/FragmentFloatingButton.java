@@ -7,7 +7,12 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -19,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -161,13 +167,73 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
             int pressedColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
             setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
         } else {
-            imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
-            progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
-            setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
-                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
-            ));
+            if (SharedConfig.liquidGlassEnabled) {
+                imageView.setColorFilter(0xFF04241A, PorterDuff.Mode.SRC_IN);
+                progressView.setProgressColor(0xFF04241A);
+                int accent = SharedConfig.liquidGlassAccentColor;
+                setBackground(Theme.createSimpleSelectorCircleDrawable(dp(58), accent, 0xFF04241A));
+            } else {
+                imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
+                progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
+                setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
+                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                    Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
+                ));
+            }
         }
+    }
+
+    private Paint glassSheenPaint;
+    private Paint glassStrokePaint;
+    private Paint glassGlowPaint;
+
+    @Override
+    protected void dispatchDraw(@NonNull Canvas canvas) {
+        if (!isSubButton && SharedConfig.liquidGlassEnabled) {
+            int w = getWidth();
+            int h = getHeight();
+            if (w > 0 && h > 0) {
+                float cx = w / 2f;
+                float cy = h / 2f;
+                float radius = Math.min(cx, cy);
+
+                if (glassSheenPaint == null) {
+                    glassSheenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    LinearGradient sheen = new LinearGradient(
+                            0, 0, w, h,
+                            new int[]{0x73FFFFFF, 0x00FFFFFF},
+                            new float[]{0.0f, 0.75f},
+                            Shader.TileMode.CLAMP
+                    );
+                    glassSheenPaint.setShader(sheen);
+
+                    glassStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    glassStrokePaint.setStyle(Paint.Style.STROKE);
+                    glassStrokePaint.setStrokeWidth(dp(1));
+                    glassStrokePaint.setColor(0x80FFFFFF); // rgba(255,255,255,0.5)
+
+                    glassGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    int accent = SharedConfig.liquidGlassAccentColor;
+                    int glowColor = Color.argb(0x60, Color.red(accent), Color.green(accent), Color.blue(accent));
+                    RadialGradient glow = new RadialGradient(
+                            cx, h * 0.85f,
+                            radius,
+                            new int[]{glowColor, Color.TRANSPARENT},
+                            new float[]{0.0f, 1.0f},
+                            Shader.TileMode.CLAMP
+                    );
+                    glassGlowPaint.setShader(glow);
+                }
+
+                // Bottom accent glow
+                canvas.drawCircle(cx, cy, radius, glassGlowPaint);
+                // Diagonal sheen
+                canvas.drawCircle(cx, cy, radius, glassSheenPaint);
+                // Perimeter stroke
+                canvas.drawCircle(cx, cy, radius - dp(0.5f), glassStrokePaint);
+            }
+        }
+        super.dispatchDraw(canvas);
     }
 
     public static final int SIZE = 48;
@@ -179,7 +245,8 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     }
 
     public static FrameLayout.LayoutParams createDefaultLayoutParams() {
-        return LayoutHelper.createFrame(48, 48,
+        int size = SharedConfig.liquidGlassEnabled ? 58 : 48;
+        return LayoutHelper.createFrame(size, size,
                 (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
                 20, 0, 20, 14);
     }

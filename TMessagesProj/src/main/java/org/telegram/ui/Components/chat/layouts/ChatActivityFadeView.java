@@ -104,6 +104,9 @@ public class ChatActivityFadeView extends View implements Theme.Colorable {
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
+        if (org.telegram.messenger.SharedConfig.liquidGlassEnabled) {
+            return;
+        }
         super.onDraw(canvas);
         fadeDrawableTop.draw(canvas);
         fadeDrawableBottom.draw(canvas);

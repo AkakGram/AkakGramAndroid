@@ -650,19 +650,26 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             }
             drawBackground = false;
         } else {
-            if (notDrawBackgroundOnTopView) {
+            if (SharedConfig.liquidGlassEnabled) {
+                org.telegram.ui.Components.glass.GlassDrawable glassBg = new org.telegram.ui.Components.glass.GlassDrawable(org.telegram.ui.Components.glass.GlassDrawable.LEVEL_DIALOG, dp(24));
+                containerView.setBackground(glassBg);
+                containerView.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(dp(8), dp(24)));
+                containerView.setClipToOutline(true);
+                drawBackground = false;
+            } else if (notDrawBackgroundOnTopView) {
                 Rect rect = new Rect();
                 shadowDrawable.getPadding(rect);
                 containerView.setPadding(rect.left, rect.top, rect.right, rect.bottom);
-                drawBackground = true;
+                containerView.setBackground(shadowDrawable);
+                containerView.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(dp(8), dp(20)));
+                containerView.setClipToOutline(true);
+                drawBackground = false;
             } else {
                 containerView.setBackground(null);
                 containerView.setPadding(0, 0, 0, 0);
                 containerView.setBackground(shadowDrawable);
-
                 containerView.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(dp(8), dp(20)));
                 containerView.setClipToOutline(true);
-
                 drawBackground = false;
             }
         }
@@ -1239,7 +1246,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             params.width = WindowManager.LayoutParams.MATCH_PARENT;
         } else {
             if (dimEnabled && !dimCustom) {
-                params.dimAmount = dimAlpha;
+                params.dimAmount = SharedConfig.liquidGlassEnabled ? 0.60f : dimAlpha;
                 params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
             } else {
                 params.dimAmount = 0f;

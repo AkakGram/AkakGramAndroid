@@ -994,6 +994,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                     cell.setChecked(selectedDialogs.contains(cell.getDialogId()), oldDialogId == cell.getDialogId());
                 } else {
                     DialogCell cell = (DialogCell) holder.itemView;
+                    cell.setIsTrailingFabItem(i >= getItemCount() - 2);
                     cell.isHiddenInCommunity = communityId != 0 && ChatObject.isHiddenInCommunity(currentAccount, dialog.id);
                     cell.useSeparator = false; // nextDialog != null;
                     cell.fullSeparator = false; // dialog.pinned && nextDialog != null && !nextDialog.pinned;

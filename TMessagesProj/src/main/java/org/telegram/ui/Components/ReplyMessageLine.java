@@ -616,10 +616,15 @@ public class ReplyMessageLine {
     }
 
     public void drawBackground(Canvas canvas, RectF rect, float leftRad, float rightRad, float bottomRad, float alpha, boolean hasQuote, boolean emojiOnly) {
-        radii[0] = radii[1] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(leftRad));
-        radii[2] = radii[3] = AndroidUtilities.dp(rightRad);
-        radii[4] = radii[5] = AndroidUtilities.dp(bottomRad);
-        radii[6] = radii[7] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(bottomRad));
+        if (SharedConfig.liquidGlassEnabled) {
+            float r16 = AndroidUtilities.dp(16);
+            radii[0] = radii[1] = radii[2] = radii[3] = radii[4] = radii[5] = radii[6] = radii[7] = r16;
+        } else {
+            radii[0] = radii[1] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(leftRad));
+            radii[2] = radii[3] = AndroidUtilities.dp(rightRad);
+            radii[4] = radii[5] = AndroidUtilities.dp(bottomRad);
+            radii[6] = radii[7] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(bottomRad));
+        }
         drawBackground(canvas, rect, alpha, hasQuote, emojiOnly);
     }
 
@@ -656,7 +661,8 @@ public class ReplyMessageLine {
             backgroundPath.rewind();
             backgroundPath.addRoundRect(rect, radii, Path.Direction.CW);
 
-            backgroundPaint.setColor(backgroundColorAnimated.set(backgroundColor));
+            int bg = SharedConfig.liquidGlassEnabled ? 0x3D000000 : backgroundColorAnimated.set(backgroundColor);
+            backgroundPaint.setColor(bg);
             backgroundPaint.setAlpha((int) (backgroundPaint.getAlpha() * alpha));
             canvas.drawPath(backgroundPath, backgroundPaint);
         }

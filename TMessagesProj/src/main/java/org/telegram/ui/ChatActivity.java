@@ -575,6 +575,7 @@ public class ChatActivity extends BaseFragment implements
     private View emojiButtonRed;
     private FrameLayout pinnedMessageView;
     private BluredView blurredView;
+    private org.telegram.ui.Components.glass.GlowBackgroundView chatGlowBg;
     private PinnedLineView pinnedLineView;
     private boolean setPinnedTextTranslationX;
     private BackupImageView[] pinnedMessageImageView = new BackupImageView[2];
@@ -4514,6 +4515,13 @@ public class ChatActivity extends BaseFragment implements
         }
         removingFromParent = false;
         fragmentView = contentView = new ChatActivityFragmentView(context, parentLayout);
+        if (SharedConfig.liquidGlassEnabled) {
+            chatGlowBg = new org.telegram.ui.Components.glass.GlowBackgroundView(context);
+            chatGlowBg.setShowDotGrid(true);
+            contentView.addView(chatGlowBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            contentView.setClipToPadding(false);
+            contentView.setClipChildren(false);
+        }
         invalidateBlurredSourcesView = new OnPostDrawView(context, true, this::invalidateMergedVisibleBlurredPositionsAndSourcesImpl);
         contentView.addView(invalidateBlurredSourcesView);
 
@@ -9577,8 +9585,13 @@ public class ChatActivity extends BaseFragment implements
         topPanelLayout.setDebugName(topChatPanelView, "top chat panel view");
 
         reportSpamButton = new TextView(getContext());
-        reportSpamButton.setTextColor(getThemedColor(Theme.key_text_RedBold));
-        reportSpamButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_text_RedBold) & 0x19ffffff, dp(18), dp(4)));
+        if (SharedConfig.liquidGlassEnabled) {
+            reportSpamButton.setTextColor(0xFFFF9A9A);
+            reportSpamButton.setBackground(Theme.createInsetRoundRectDrawable(0x26FF9A9A, dp(26), dp(4)));
+        } else {
+            reportSpamButton.setTextColor(getThemedColor(Theme.key_text_RedBold));
+            reportSpamButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_text_RedBold) & 0x19ffffff, dp(18), dp(4)));
+        }
         reportSpamButton.setTag(Theme.key_text_RedBold);
         reportSpamButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         reportSpamButton.setTypeface(AndroidUtilities.bold());
@@ -9606,7 +9619,13 @@ public class ChatActivity extends BaseFragment implements
         topPanelLayout.setDebugName(emojiStatusSpamHint, "emoji status spam hint");
 
         addToContactsButton = new TextView(getContext());
-        addToContactsButton.setTextColor(getThemedColor(Theme.key_chat_addContact));
+        if (SharedConfig.liquidGlassEnabled) {
+            addToContactsButton.setTextColor(SharedConfig.liquidGlassAccentColor);
+            addToContactsButton.setBackground(Theme.createInsetRoundRectDrawable((SharedConfig.liquidGlassAccentColor & 0x00FFFFFF) | 0x26000000, dp(26), dp(4)));
+        } else {
+            addToContactsButton.setTextColor(getThemedColor(Theme.key_chat_addContact));
+            addToContactsButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_chat_addContact) & 0x19ffffff, dp(18), dp(4)));
+        }
         addToContactsButton.setVisibility(View.GONE);
         addToContactsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addToContactsButton.setTypeface(AndroidUtilities.bold());
@@ -9614,7 +9633,6 @@ public class ChatActivity extends BaseFragment implements
         addToContactsButton.setMaxLines(1);
         addToContactsButton.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         addToContactsButton.setGravity(Gravity.CENTER);
-        addToContactsButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_chat_addContact) & 0x19ffffff, dp(18), dp(4)));
         topChatPanelView.addView(addToContactsButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
         addToContactsButton.setOnClickListener(v -> {
             if (addToContactsButtonArchive) {
@@ -12036,7 +12054,9 @@ public class ChatActivity extends BaseFragment implements
             parent = null;
         }
         if (parent == null) {
-            contentView.addView(videoPlayerContainer, 1, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize(isSideMenued()), AndroidUtilities.roundPlayingMessageSize(isSideMenued())));
+            int chatListIdx = contentView.indexOfChild(chatListView);
+            int insertIndex = chatListIdx >= 0 ? chatListIdx + 1 : 1;
+            contentView.addView(videoPlayerContainer, insertIndex, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize(isSideMenued()), AndroidUtilities.roundPlayingMessageSize(isSideMenued())));
         }
         videoPlayerContainer.setTag(null);
         aspectRatioFrameLayout.setDrawingReady(false);
@@ -18232,7 +18252,7 @@ public class ChatActivity extends BaseFragment implements
                 if (child == null || child.getVisibility() == GONE || child == chatActivityEnterView || child == actionBar) {
                     continue;
                 }
-                if (child == backgroundView || child == blurredView || child == searchViewPager) {
+                if (child == backgroundView || child == blurredView || child == searchViewPager || child == chatGlowBg) {
                     int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
                     int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(allHeight, View.MeasureSpec.EXACTLY);
                     child.measure(contentWidthSpec, contentHeightSpec);
@@ -18410,7 +18430,7 @@ public class ChatActivity extends BaseFragment implements
                         childTop = lp.topMargin;
                 }
 
-                if (child == blurredView || child == messageEnterTransitionContainer || child == fireworksOverlay || child == messagesSearchListContainer || child == chatActivityFadeView || child == backgroundView || child == quickShareSelectorOverlay || child == chatInputViewsContainer || child instanceof HintView || child instanceof ChecksHintView) {
+                if (child == blurredView || child == messageEnterTransitionContainer || child == fireworksOverlay || child == messagesSearchListContainer || child == chatActivityFadeView || child == backgroundView || child == quickShareSelectorOverlay || child == chatInputViewsContainer || child == chatGlowBg || child instanceof HintView || child instanceof ChecksHintView) {
                     childTop = 0;
                 } else if (child instanceof TextSelectionHelper.TextSelectionOverlay) {
                     childTop = -blurredViewTopOffset;

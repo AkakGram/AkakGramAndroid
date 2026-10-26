@@ -38,6 +38,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -749,11 +750,29 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
     private boolean glassMode;
     public void setGlassMode() {
-        if (titleTextView != null) {
-            titleTextView.setTextSizePx(dp(17.5f));
-        }
-        if (subtitleTextView != null) {
-            subtitleTextView.setTextSizePx(dp(13.5f));
+        if (SharedConfig.liquidGlassEnabled) {
+            if (titleTextView != null) {
+                titleTextView.setTextSizePx(dp(18f));
+                titleTextView.setTextColor(0xFFF2F4F7);
+            }
+            if (subtitleTextView != null) {
+                subtitleTextView.setTextSizePx(dp(14f));
+                subtitleTextView.setTextColor(0xFFB4BBC7);
+            }
+            if (animatedSubtitleTextView != null) {
+                animatedSubtitleTextView.setTextSize(dp(14f));
+                animatedSubtitleTextView.setTextColor(0xFFB4BBC7);
+            }
+            if (avatarImageView != null) {
+                avatarImageView.setRoundRadius(dp(14)); // rounded square (~36% of 40dp)
+            }
+        } else {
+            if (titleTextView != null) {
+                titleTextView.setTextSizePx(dp(17.5f));
+            }
+            if (subtitleTextView != null) {
+                subtitleTextView.setTextSizePx(dp(13.5f));
+            }
         }
         glassMode = true;
     }
@@ -1370,7 +1389,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         avatarDrawable.setInfo(currentAccount, chat);
         if (avatarImageView != null) {
             avatarImageView.setForUserOrChat(chat, avatarDrawable);
-            avatarImageView.setRoundRadius(ChatObject.isForum(chat) ? dp(ChatObject.hasStories(chat) ? 11 : 16) : dp(21));
+            avatarImageView.setRoundRadius(SharedConfig.liquidGlassEnabled ? dp(14) : (ChatObject.isForum(chat) ? dp(ChatObject.hasStories(chat) ? 11 : 16) : dp(21)));
         }
     }
 
@@ -1402,6 +1421,9 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             avatarDrawable.setScaleSize(1f);
             if (avatarImageView != null) {
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
+                if (SharedConfig.liquidGlassEnabled) {
+                    avatarImageView.setRoundRadius(dp(14));
+                }
             }
         }
     }

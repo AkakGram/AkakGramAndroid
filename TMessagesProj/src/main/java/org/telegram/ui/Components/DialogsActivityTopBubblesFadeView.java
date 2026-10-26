@@ -58,6 +58,9 @@ public class DialogsActivityTopBubblesFadeView extends View {
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
+        if (org.telegram.messenger.SharedConfig.liquidGlassEnabled) {
+            return;
+        }
         canvas.drawRect(0, 0, getMeasuredWidth(), fadeStart + fadeHeight, paint);
     }
 }

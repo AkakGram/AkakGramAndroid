@@ -43,6 +43,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -941,7 +942,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             return;
         }
 
-        if (useSeparator) {
+        if (useSeparator && !SharedConfig.liquidGlassEnabled) {
             Paint dividerPaint = null;
             if (customPaints && resourcesProvider != null) {
                 dividerPaint = resourcesProvider.getPaint(Theme.key_paint_divider);

@@ -827,6 +827,33 @@ public class ThemeColors {
         defaultColors[key_glass_tabSelectedText] = 0xFF0d7fcf;
         defaultColors[key_glass_tabUnselected] = 0xFF1A1D21;
 
+        // Liquid Glass Colors
+        defaultColors[key_glass_background] = 0xFF0A0C10;
+        defaultColors[key_glass_accent] = 0xFF5EE0A0; // default mint
+        defaultColors[key_glass_accent_text] = 0xFF04241A;
+        defaultColors[key_glass_text_primary] = 0xFFF2F4F7;
+        defaultColors[key_glass_text_secondary] = 0xFFA3ABB8;
+        defaultColors[key_glass_icon_inactive] = 0xFFC3C9D4;
+        defaultColors[key_glass_danger] = 0xFFFF9A9A;
+
+        // Level 1: Light
+        defaultColors[key_glass_l1_fill] = 0x0FFFFFFF;      // rgba(255, 255, 255, 0.06)
+        defaultColors[key_glass_l1_stroke] = 0x1FFFFFFF;    // rgba(255, 255, 255, 0.12)
+        defaultColors[key_glass_l1_highlight] = 0x3DFFFFFF; // rgba(255, 255, 255, 0.24)
+
+        // Level 2: Main
+        defaultColors[key_glass_l2_fill] = 0x66222632;      // rgba(34, 38, 50, 0.40)
+        defaultColors[key_glass_l2_stroke] = 0x29FFFFFF;    // rgba(255, 255, 255, 0.16)
+        defaultColors[key_glass_l2_highlight] = 0x57FFFFFF; // rgba(255, 255, 255, 0.34)
+        defaultColors[key_glass_l2_highlight_bottom] = 0x0FFFFFFF; // rgba(255, 255, 255, 0.06)
+
+        // Level 3: Active
+        defaultColors[key_glass_l3_fill] = 0x24FFFFFF;      // rgba(255, 255, 255, 0.14)
+        defaultColors[key_glass_l3_stroke] = 0x2EFFFFFF;    // rgba(255, 255, 255, 0.18)
+        defaultColors[key_glass_l3_highlight] = 0x6BFFFFFF; // rgba(255, 255, 255, 0.42)
+
+        defaultColors[key_glass_dialog_fill] = 0xDE1B202A;  // rgba(27, 32, 42, 0.87) — читаемый полупрозрачный фон диалогов
+
         defaultColors[key_botKeyboard_button_danger] = 0xFFdb4646;
         defaultColors[key_botKeyboard_button_primary] = TELEGRAM_COLOR;
         defaultColors[key_botKeyboard_button_success] = 0xFF40b135;
@@ -1609,6 +1636,28 @@ public class ThemeColors {
         colorKeysMap.put(key_glass_targetMainTopPanel, "glass_targetMainTopPanel");
         colorKeysMap.put(key_glass_tabSelectedText, "glass_tabSelectedText");
         colorKeysMap.put(key_glass_tabUnselected, "glass_tabUnselected");
+
+        colorKeysMap.put(key_glass_background, "glass_background");
+        colorKeysMap.put(key_glass_accent, "glass_accent");
+        colorKeysMap.put(key_glass_accent_text, "glass_accent_text");
+        colorKeysMap.put(key_glass_text_primary, "glass_text_primary");
+        colorKeysMap.put(key_glass_text_secondary, "glass_text_secondary");
+        colorKeysMap.put(key_glass_icon_inactive, "glass_icon_inactive");
+        colorKeysMap.put(key_glass_danger, "glass_danger");
+
+        colorKeysMap.put(key_glass_l1_fill, "glass_l1_fill");
+        colorKeysMap.put(key_glass_l1_stroke, "glass_l1_stroke");
+        colorKeysMap.put(key_glass_l1_highlight, "glass_l1_highlight");
+
+        colorKeysMap.put(key_glass_l2_fill, "glass_l2_fill");
+        colorKeysMap.put(key_glass_l2_stroke, "glass_l2_stroke");
+        colorKeysMap.put(key_glass_l2_highlight, "glass_l2_highlight");
+        colorKeysMap.put(key_glass_l2_highlight_bottom, "glass_l2_highlight_bottom");
+
+        colorKeysMap.put(key_glass_l3_fill, "glass_l3_fill");
+        colorKeysMap.put(key_glass_l3_stroke, "glass_l3_stroke");
+        colorKeysMap.put(key_glass_l3_highlight, "glass_l3_highlight");
+        colorKeysMap.put(key_glass_dialog_fill, "glass_dialog_fill");
         colorKeysMap.put(key_botKeyboard_button_danger, "botKeyboard_button_danger");
         colorKeysMap.put(key_botKeyboard_button_primary, "botKeyboard_button_primary");
         colorKeysMap.put(key_botKeyboard_button_success, "botKeyboard_button_success");

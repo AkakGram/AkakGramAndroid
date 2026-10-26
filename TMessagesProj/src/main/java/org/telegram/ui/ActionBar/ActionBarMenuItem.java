@@ -287,8 +287,30 @@ public class ActionBarMenuItem extends FrameLayout {
         invalidate();
     }
 
+    private boolean isGlassButtonCircle;
+    private org.telegram.ui.Components.glass.GlassDrawable glassButtonDrawable;
+
+    public void setIsGlassButtonCircle(boolean value) {
+        isGlassButtonCircle = value;
+        if (value && glassButtonDrawable == null) {
+            glassButtonDrawable = new org.telegram.ui.Components.glass.GlassDrawable(org.telegram.ui.Components.glass.GlassDrawable.LEVEL_LIGHT);
+            glassButtonDrawable.setIsCapsule(true);
+        }
+        invalidate();
+    }
+
     @Override
     public void draw(Canvas canvas) {
+        if (isGlassButtonCircle && glassButtonDrawable != null) {
+            int w = getWidth();
+            int h = getHeight();
+            int size = Math.min(w, h);
+            int cx = w / 2;
+            int cy = h / 2;
+            int rad = size / 2;
+            glassButtonDrawable.setBounds(cx - rad, cy - rad, cx + rad, cy + rad);
+            glassButtonDrawable.draw(canvas);
+        }
         if (fixBackground) {
             getBackground().draw(canvas);
         }

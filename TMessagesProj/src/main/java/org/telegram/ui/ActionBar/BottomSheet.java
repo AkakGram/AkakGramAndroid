@@ -27,6 +27,7 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
+import org.telegram.messenger.SharedConfig;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
@@ -1353,7 +1354,12 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                     onContainerTranslationYChanged(translationY);
                 }
             };
-            containerView.setBackgroundDrawable(shadowDrawable);
+            if (SharedConfig.liquidGlassEnabled) {
+                org.telegram.ui.Components.glass.GlassDrawable glassBg = new org.telegram.ui.Components.glass.GlassDrawable(org.telegram.ui.Components.glass.GlassDrawable.LEVEL_DIALOG, dp(28));
+                containerView.setBackground(glassBg);
+            } else {
+                containerView.setBackgroundDrawable(shadowDrawable);
+            }
             containerView.setPadding(backgroundPaddingLeft, (applyTopPadding ? dp(8) : 0) + backgroundPaddingTop - 1, backgroundPaddingLeft, (applyBottomPadding ? dp(8) : 0));
         }
         containerView.setVisibility(View.INVISIBLE);

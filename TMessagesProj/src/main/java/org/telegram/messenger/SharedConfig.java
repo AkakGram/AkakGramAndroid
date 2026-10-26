@@ -219,6 +219,10 @@ public class SharedConfig {
     public static boolean fastWallpaperDisabled;
     public static boolean frameMetricsEnabled;
 
+    public static boolean liquidGlassEnabled = true;
+    public static int liquidGlassAccentColor = 0xFF5EE0A0; // default mint
+    public static boolean liquidGlassBlurEnabled = true;
+
     public static String directShareHash;
 
     @PasscodeType
@@ -530,6 +534,9 @@ public class SharedConfig {
             storageCacheDir = preferences.getString("storageCacheDir", null);
             proxyRotationEnabled = preferences.getBoolean("proxyRotationEnabled", false);
             proxyRotationTimeout = preferences.getInt("proxyRotationTimeout", ProxyRotationController.DEFAULT_TIMEOUT_INDEX);
+            liquidGlassEnabled = preferences.getBoolean("liquidGlassEnabled", true);
+            liquidGlassAccentColor = preferences.getInt("liquidGlassAccentColor", 0xFF5EE0A0);
+            liquidGlassBlurEnabled = preferences.getBoolean("liquidGlassBlurEnabled", true);
             String authKeyString = preferences.getString("pushAuthKey", null);
             if (!TextUtils.isEmpty(authKeyString)) {
                 pushAuthKey = Base64.decode(authKeyString, Base64.DEFAULT);
@@ -1751,6 +1758,25 @@ public class SharedConfig {
 
     public static boolean chatBlurEnabled() {
         return canBlurChat() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
+    }
+
+    public static boolean isLiquidGlassBlurActuallyEnabled() {
+        return liquidGlassEnabled && liquidGlassBlurEnabled && (Build.VERSION.SDK_INT >= 31) && canBlurChat();
+    }
+
+    public static void setLiquidGlassEnabled(boolean enabled) {
+        liquidGlassEnabled = enabled;
+        ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE).edit().putBoolean("liquidGlassEnabled", enabled).apply();
+    }
+
+    public static void setLiquidGlassAccentColor(int color) {
+        liquidGlassAccentColor = color;
+        ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE).edit().putInt("liquidGlassAccentColor", color).apply();
+    }
+
+    public static void setLiquidGlassBlurEnabled(boolean enabled) {
+        liquidGlassBlurEnabled = enabled;
+        ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE).edit().putBoolean("liquidGlassBlurEnabled", enabled).apply();
     }
 
     public static class BackgroundActivityPrefs {

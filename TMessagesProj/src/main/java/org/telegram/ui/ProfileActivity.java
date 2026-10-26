@@ -4342,6 +4342,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         listView.setLayoutManager(layoutManager);
         listView.setGlowColor(0);
         listView.setAdapter(listAdapter);
+        if (SharedConfig.liquidGlassEnabled) {
+            org.telegram.ui.Components.glass.GlowBackgroundView glowBg = new org.telegram.ui.Components.glass.GlowBackgroundView(context);
+            frameLayout.addView(glowBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (getParentActivity() == null) {
@@ -6458,6 +6462,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (ChatObject.isForum(chatLocal)) {
                 return dp(needInsetForStories() ? 24 : 38);
             }
+        }
+        if (SharedConfig.liquidGlassEnabled) {
+            return dp(36);
         }
         return dp(50);
     }
