@@ -113,6 +113,11 @@ public class DataSettingsActivity extends BaseFragment {
     private int saveToGalleryGroupsRow;
     private int saveToGalleryDividerRow;
 
+    private int uploadSectionRow;
+    private int uploadThreadsRow;
+    private int uploadThreadsInfoRow;
+    private int uploadSection2Row;
+
     private int appUpdateSectionRow;
     private int autoUpdateRow;
     private int autoUpdateWifiRow;
@@ -206,6 +211,11 @@ public class DataSettingsActivity extends BaseFragment {
         proxySection2Row = rowCount++;
         clearDraftsRow = rowCount++;
         clearDraftsSectionRow = rowCount++;
+
+        uploadSectionRow = rowCount++;
+        uploadThreadsRow = rowCount++;
+        uploadThreadsInfoRow = rowCount++;
+        uploadSection2Row = rowCount++;
 
         appUpdateSectionRow = rowCount++;
         autoUpdateRow = rowCount++;
@@ -607,6 +617,35 @@ public class DataSettingsActivity extends BaseFragment {
                 if (button != null) {
                     button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
+            } else if (position == uploadThreadsRow) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                final int[] threadValues = new int[]{4, 8, 16, 24, 32};
+                final String[] threadNames = new String[]{
+                        "4 потока (по умолчанию)",
+                        "8 потоков (быстро)",
+                        "16 потоков (очень быстро)",
+                        "24 потока (турбо)",
+                        "32 потока (максимум)"
+                };
+                int selected = 2; // 16 по умолчанию
+                for (int a = 0; a < threadValues.length; a++) {
+                    if (threadValues[a] == SharedConfig.uploadThreads) {
+                        selected = a;
+                        break;
+                    }
+                }
+                Dialog dlg = AlertsCreator.createSingleChoiceDialog(getParentActivity(), threadNames,
+                        "Потоки загрузки файлов", selected, (dialog, which) -> {
+                            if (which >= 0 && which < threadValues.length) {
+                                SharedConfig.setUploadThreads(threadValues[which]);
+                                if (listAdapter != null) {
+                                    listAdapter.notifyItemChanged(uploadThreadsRow);
+                                }
+                            }
+                        });
+                showDialog(dlg);
             } else if (position == autoUpdateRow) {
                 boolean newVal = !org.telegram.messenger.custom.CustomUpdateController.isAutoUpdateEnabled();
                 org.telegram.messenger.custom.CustomUpdateController.setAutoUpdateEnabled(newVal);
@@ -761,6 +800,17 @@ public class DataSettingsActivity extends BaseFragment {
                     } else if (position == clearDraftsRow) {
                         textCell.setIcon(0);
                         textCell.setText(LocaleController.getString(R.string.PrivacyDeleteCloudDrafts), false);
+                    } else if (position == uploadThreadsRow) {
+                        textCell.setIcon(0);
+                        String val = SharedConfig.uploadThreads + " потоков";
+                        if (SharedConfig.uploadThreads == 4) {
+                            val = "4 потока (по умолчанию)";
+                        } else if (SharedConfig.uploadThreads == 16) {
+                            val = "16 потоков (рекомендуется)";
+                        } else if (SharedConfig.uploadThreads == 32) {
+                            val = "32 потока (максимум)";
+                        }
+                        textCell.setTextAndValue("Потоки загрузки на сервер", val, false, false);
                     } else if (position == checkUpdateRow) {
                         textCell.setIcon(0);
                         textCell.setText("Проверить наличие обновлений", false);
@@ -783,6 +833,8 @@ public class DataSettingsActivity extends BaseFragment {
                         headerCell.setText(LocaleController.getString(R.string.AutoplayMedia));
                     } else if (position == saveToGallerySectionRow) {
                         headerCell.setText(LocaleController.getString(R.string.SaveToGallerySettings));
+                    } else if (position == uploadSectionRow) {
+                        headerCell.setText("Скорость отправки файлов");
                     } else if (position == appUpdateSectionRow) {
                         headerCell.setText("Обновление приложения");
                     }
@@ -816,6 +868,8 @@ public class DataSettingsActivity extends BaseFragment {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == enableAllStreamInfoRow) {
                         cell.setText(LocaleController.getString(R.string.EnableAllStreamingInfo));
+                    } else if (position == uploadThreadsInfoRow) {
+                        cell.setText("Увеличивает количество параллельных потоков и размер блоков при загрузке файлов на сервер, существенно повышая скорость отправки.");
                     } else if (position == appUpdateInfoRow) {
                         cell.setText("При выходе новой версии AkakGram приложение сможет автоматически скачать APK в фоне (в том числе по тихому сигналу FCM) и сразу предложить установку.");
                     }
@@ -939,6 +993,7 @@ public class DataSettingsActivity extends BaseFragment {
             return position == mobileRow || position == roamingRow || position == wifiRow || position == storageUsageRow || position == useLessDataForCallsRow || position == dataUsageRow || position == proxyRow || position == clearDraftsRow ||
                     position == enableCacheStreamRow || position == enableStreamRow || position == enableAllStreamRow || position == enableMkvRow || position == quickRepliesRow || position == autoplayVideoRow || position == autoplayGifsRow ||
                     position == storageNumRow || position == saveToGalleryGroupsRow || position == saveToGalleryPeerRow || position == saveToGalleryChannelsRow || position == resetDownloadRow ||
+                    position == uploadThreadsRow ||
                     position == autoUpdateRow || position == autoUpdateWifiRow || position == checkUpdateRow;
         }
 
@@ -980,13 +1035,13 @@ public class DataSettingsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == mediaDownloadSection2Row || position == usageSection2Row || position == callsSection2Row || position == proxySection2Row || position == autoplaySectionRow || position == clearDraftsSectionRow || position == saveToGalleryDividerRow || position == appUpdateSection2Row) {
+            if (position == mediaDownloadSection2Row || position == usageSection2Row || position == callsSection2Row || position == proxySection2Row || position == autoplaySectionRow || position == clearDraftsSectionRow || position == saveToGalleryDividerRow || position == uploadSection2Row || position == appUpdateSection2Row) {
                 return 0;
-            } else if (position == mediaDownloadSectionRow || position == streamSectionRow || position == callsSectionRow || position == usageSectionRow || position == proxySectionRow || position == autoplayHeaderRow || position == saveToGallerySectionRow || position == appUpdateSectionRow) {
+            } else if (position == mediaDownloadSectionRow || position == streamSectionRow || position == callsSectionRow || position == usageSectionRow || position == proxySectionRow || position == autoplayHeaderRow || position == saveToGallerySectionRow || position == uploadSectionRow || position == appUpdateSectionRow) {
                 return 2;
             } else if (position == enableCacheStreamRow || position == enableStreamRow || position == enableAllStreamRow || position == enableMkvRow || position == autoplayGifsRow || position == autoplayVideoRow || position == autoUpdateRow || position == autoUpdateWifiRow) {
                 return 3;
-            } else if (position == enableAllStreamInfoRow || position == appUpdateInfoRow) {
+            } else if (position == enableAllStreamInfoRow || position == uploadThreadsInfoRow || position == appUpdateInfoRow) {
                 return 4;
             } else if (position == mobileRow || position == wifiRow || position == roamingRow || position == saveToGalleryGroupsRow || position == saveToGalleryPeerRow || position == saveToGalleryChannelsRow) {
                 return 5;

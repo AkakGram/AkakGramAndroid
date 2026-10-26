@@ -37,12 +37,10 @@ public class FileUploadOperation {
     private boolean isLastPart;
     private boolean nextPartFirst;
     private int operationGuid;
-    private static final int minUploadChunkSize = 128;
-    private static final int minUploadChunkSlowNetworkSize = 32;
-    private static final int initialRequestsCount = 8;
-    private static final int initialRequestsSlowNetworkCount = 1;
-    private static final int maxUploadingKBytes = 1024 * 2;
-    private static final int maxUploadingSlowNetworkKBytes = 32;
+    private static final int minUploadChunkSize = 512;
+    private static final int minUploadChunkSlowNetworkSize = 128;
+    private static final int initialRequestsSlowNetworkCount = 2;
+    private static final int maxUploadingSlowNetworkKBytes = 512;
 
     private int maxRequestsCount;
     private int uploadChunkSize = 64 * 1024;
@@ -121,7 +119,9 @@ public class FileUploadOperation {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("start upload on slow network = " + slowNetwork);
             }
-            for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
+            int configuredThreads = Math.max(1, SharedConfig.uploadThreads);
+            int initialCount = slowNetwork ? Math.max(1, configuredThreads / 4) : configuredThreads;
+            for (int a = 0; a < initialCount; a++) {
                 startUploadRequest();
             }
         });
@@ -158,7 +158,9 @@ public class FileUploadOperation {
                 cachedResults.clear();
 
                 operationGuid++;
-                for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
+                int configuredThreads = Math.max(1, SharedConfig.uploadThreads);
+                int initialCount = slowNetwork ? Math.max(1, configuredThreads / 4) : configuredThreads;
+                for (int a = 0; a < initialCount; a++) {
                     startUploadRequest();
                 }
             }
@@ -317,7 +319,8 @@ public class FileUploadOperation {
                     }
                     uploadChunkSize = chunkSize;
                 }
-                maxRequestsCount = Math.max(1, (slowNetwork ? maxUploadingSlowNetworkKBytes : maxUploadingKBytes) / uploadChunkSize);
+                int configuredThreads = Math.max(1, SharedConfig.uploadThreads);
+                maxRequestsCount = slowNetwork ? Math.max(1, configuredThreads / 4) : configuredThreads;
 
                 if (isEncrypted) {
                     freeRequestIvs = new ArrayList<>(maxRequestsCount);
